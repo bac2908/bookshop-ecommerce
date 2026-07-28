@@ -36,7 +36,7 @@
 </head>
 <body>
 
-<header th:replace="~{/web/fragments/header :: header}"></header>
+<header th:replace="~{web/fragments/header :: header}"></header>
 
 <section class="inner-section single-banner"
          th:style="|background: url(@{/images/single-banner.jpg}) no-repeat center|">
@@ -110,17 +110,23 @@
                                                 rawMax=${item.product.quantity},
                                                 max=${rawMax == null ? 999999 : rawMax}
                                              ">
-                                            <a class="btn btn-sm btn-outline-secondary"
-                                               th:href="@{/cart/dec(productId=${item.product.productId}, redirect='checkout')}"
-                                               th:attr="aria-disabled=${q <= 1}"
-                                               title="Giảm">−</a>
+                                            <form class="inline-action-form"
+                                                  th:action="@{/cart/dec(productId=${item.product.productId}, redirect='checkout')}"
+                                                  method="post">
+                                                <button class="btn btn-sm btn-outline-secondary"
+                                                        type="submit" th:disabled="${q <= 1}"
+                                                        title="Giảm">−</button>
+                                            </form>
 
                                             <span><strong>[[${q}]]</strong></span>
 
-                                            <a class="btn btn-sm btn-outline-secondary"
-                                               th:href="@{/cart/inc(productId=${item.product.productId}, redirect='checkout')}"
-                                               th:attr="aria-disabled=${q >= max}"
-                                               title="Tăng">+</a>
+                                            <form class="inline-action-form"
+                                                  th:action="@{/cart/inc(productId=${item.product.productId}, redirect='checkout')}"
+                                                  method="post">
+                                                <button class="btn btn-sm btn-outline-secondary"
+                                                        type="submit" th:disabled="${q >= max}"
+                                                        title="Tăng">+</button>
+                                            </form>
                                         </div>
 
                                         <div class="text-muted" style="font-size:12px;"
@@ -249,16 +255,9 @@
 <script>
     function showConfigModalDialog(id, name) {
         $('#productName').text(name);
-        $('#yesOption').attr('href', '/remove/'+id);
+        $('#removeCartForm').attr('action', '/remove/' + encodeURIComponent(id));
         $('#configmationId').modal('show');
     }
-
-    document.addEventListener('click', function(e){
-        const a = e.target.closest('a.btn, a.qty-btn');
-        if (a && a.getAttribute('aria-disabled') === 'true') {
-            e.preventDefault(); e.stopPropagation();
-        }
-    });
 </script>
 
 <!-- Modal xác nhận xoá -->
@@ -272,14 +271,17 @@
                     <p>Bạn có muốn xoá sản phẩm " <span style="color: #119744" id="productName"></span> " ra khỏi giỏ hàng không ?</p>
                 </div>
                 <div class="modal-footer">
-                    <a id="yesOption" type="button" class="btn btn-success">Có</a>
+                    <form id="removeCartForm" method="post">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button type="submit" class="btn btn-success">Có</button>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<footer th:replace="~{/web/fragments/footer :: footer}"></footer>
+<footer th:replace="~{web/fragments/footer :: footer}"></footer>
 
 <script th:src="@{/vendor/bootstrap/jquery-1.12.4.min.js}"></script>
 <script th:src="@{/vendor/bootstrap/popper.min.js}"></script>

@@ -18,7 +18,7 @@
 </head>
 <body>
 
-<header th:replace="~{/web/fragments/header :: header}"></header>
+<header th:replace="~{web/fragments/header :: header}"></header>
 
 <section class="news-part"
          th:style="'background: url(' + @{/images/newsletter.jpg} + ') no-repeat center'">
@@ -42,7 +42,7 @@
     </div>
 </section>
 
-<footer th:replace="~{/web/fragments/footer :: footer}"></footer>
+<footer th:replace="~{web/fragments/footer :: footer}"></footer>
 
 <script th:src="@{/vendor/bootstrap/jquery-1.12.4.min.js}"></script>
 <script th:src="@{/vendor/bootstrap/popper.min.js}"></script>

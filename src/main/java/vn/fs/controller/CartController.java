@@ -97,7 +97,7 @@ public class CartController extends CommomController {
 
     /* ============================ Cart ops ============================ */
 
-    @GetMapping("/addToCart")
+    @PostMapping("/addToCart")
     public String add(@RequestParam("productId") Long productId,
                       @RequestParam(value = "qty", defaultValue = "1") int qty) {
         Product product = productRepository.findById(productId).orElse(null);
@@ -108,7 +108,7 @@ public class CartController extends CommomController {
         return "redirect:/products";
     }
 
-    @GetMapping("/remove/{id}")
+    @PostMapping("/remove/{id}")
     public String remove(@PathVariable("id") Long id) {
         Product product = productRepository.findById(id).orElse(null);
         if (product != null) {
@@ -201,7 +201,7 @@ public class CartController extends CommomController {
         return "web/payment_cancel";
     }
     // Tăng số lượng 1 đơn vị (hoặc step) rồi redirect về nơi gọi
-    @GetMapping("/cart/inc")
+    @PostMapping("/cart/inc")
     public String cartInc(@RequestParam("productId") Long productId,
                           @RequestParam(value = "step", defaultValue = "1") int step,
                           @RequestParam(value = "redirect", required = false) String redirect,
@@ -216,7 +216,7 @@ public class CartController extends CommomController {
     }
 
     // Giảm số lượng 1 đơn vị (không thấp hơn 1) rồi redirect về nơi gọi
-    @GetMapping("/cart/dec")
+    @PostMapping("/cart/dec")
     public String cartDec(@RequestParam("productId") Long productId,
                           @RequestParam(value = "step", defaultValue = "1") int step,
                           @RequestParam(value = "redirect", required = false) String redirect,

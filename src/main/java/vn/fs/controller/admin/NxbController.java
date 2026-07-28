@@ -94,7 +94,7 @@ public class NxbController {
     }
 
     // Ẩn NXB + Ẩn tất cả sản phẩm con; nếu không còn sp tham chiếu thì xóa cứng
-    @GetMapping("/deleteNxb/{id}")
+    @PostMapping("/deleteNxb/{id}")
     public String delete(@PathVariable("id") Long id, RedirectAttributes ra) {
         Optional<NXB> opt = nxbService.findById(id);
         if (opt.isEmpty()) {
@@ -115,7 +115,7 @@ public class NxbController {
     }
 
     // Khôi phục NXB (không tự mở sp con)
-    @RequestMapping(value = "/restoreNxb/{id}", method = {RequestMethod.GET, RequestMethod.POST})
+    @PostMapping("/restoreNxb/{id}")
     public String restoreNxb(@PathVariable("id") Long id, RedirectAttributes ra) {
         nxbService.restore(id);
         productService.restoreByNxb(id);

@@ -37,8 +37,10 @@ public class HomeController {
                 .map(r -> r[0] == null ? null : ((Number) r[0]).longValue())
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-        Map<Long, Product> map = productRepository.findByInventoryIds(ids).stream()
-                .collect(Collectors.toMap(Product::getProductId, p -> p));
+        Map<Long, Product> map = ids.isEmpty()
+                ? Collections.emptyMap()
+                : productRepository.findByInventoryIds(ids).stream()
+                        .collect(Collectors.toMap(Product::getProductId, p -> p));
         List<Product> bestSellers = ids.stream()
                 .map(map::get)
                 .filter(Objects::nonNull)

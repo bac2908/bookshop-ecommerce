@@ -30,7 +30,7 @@ public class FavoriteController extends CommomController {
     }
 
     // thêm
-    @GetMapping("/doFavorite")
+    @PostMapping("/doFavorite")
     public String doFavorite(User user,
                              @RequestParam("id") Long productId,
                              @RequestParam(value = "redirect", defaultValue = "/products") String redirect,
@@ -45,7 +45,7 @@ public class FavoriteController extends CommomController {
     }
 
     // bỏ
-    @GetMapping("/doUnFavorite")
+    @PostMapping("/doUnFavorite")
     public String doUnFavorite(User user,
                                @RequestParam("id") Long productId,
                                @RequestParam(value = "redirect", defaultValue = "/products") String redirect) {

@@ -34,7 +34,7 @@
 <body>
 
 <!-- Header -->
-<header th:replace="~{/web/fragments/header :: header}"></header>
+<header th:replace="~{web/fragments/header :: header}"></header>
 
 <section class="inner-section single-banner" style="background: url(/images/single-banner.jpg) no-repeat center">
     <div class="container">
@@ -271,7 +271,7 @@
 <script>
     function showConfigCancelModalDialog(id) {
         $('#idCancel').text(id);
-        $('#yesOptionCanCel').attr('href', '/order/cancel/' + id);
+        $('#cancelOrderForm').attr('action', '/order/cancel/' + encodeURIComponent(id));
         $('#configmationCancelId').modal('show');
     }
 </script>
@@ -291,7 +291,10 @@
                     </p>
                 </div>
                 <div class="modal-footer">
-                    <a id="yesOptionCanCel" type="button" class="btn btn-success">Có</a>
+                    <form id="cancelOrderForm" method="post">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button type="submit" class="btn btn-success">Có</button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -361,7 +364,7 @@
 </section>
 
 <!-- Footer -->
-<footer th:replace="~{/web/fragments/footer :: footer}"></footer>
+<footer th:replace="~{web/fragments/footer :: footer}"></footer>
 
 <script>
     // Chặn khoảng trắng & ký tự lạ cho username; chặn khoảng trắng cho phone

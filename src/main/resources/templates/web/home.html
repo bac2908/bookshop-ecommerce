@@ -27,7 +27,7 @@
 <body>
 
 <!-- Header -->
-<header th:replace="~{/web/fragments/header :: header}"></header>
+<header th:replace="~{web/fragments/header :: header}"></header>
 
 <!-- ===== SLIDER/BANNER ===== -->
 <section class="home-index-slider slider-arrow slider-dots">
@@ -123,11 +123,17 @@
                                         <a title="Hãy đăng nhập" th:href="@{/login}" class="fas fa-heart"></a>
                                     </th:block>
                                     <th:block sec:authorize="isAuthenticated()">
-                                        <a th:if="${!item.favorite}" title="Yêu thích"
-                                           th:href="@{/doFavorite(id=${item.productId}, redirect = '/')}" class="fas fa-heart"></a>
-                                        <a th:if="${item.favorite}" title="Xóa Yêu thích"
-                                           th:href="@{/doUnFavorite(id=${item.productId}, redirect = '/')}"
-                                           style="background-color:#fd7e14" class="fas fa-heart"></a>
+                                        <form th:if="${!item.favorite}" class="inline-action-form"
+                                              th:action="@{/doFavorite(id=${item.productId}, redirect='/')}" method="post">
+                                            <button type="submit" title="Yêu thích"
+                                                    class="product-widget-action fas fa-heart"></button>
+                                        </form>
+                                        <form th:if="${item.favorite}" class="inline-action-form"
+                                              th:action="@{/doUnFavorite(id=${item.productId}, redirect='/')}" method="post">
+                                            <button type="submit" title="Xóa Yêu thích"
+                                                    style="background-color:#fd7e14"
+                                                    class="product-widget-action fas fa-heart"></button>
+                                        </form>
                                     </th:block>
 
                                     <a title="Video sản phẩm" href="https://youtu.be/9xzcVxSBbG8" class="venobox fas fa-play" data-autoplay="true" data-vbtype="video"></a>
@@ -149,9 +155,13 @@
                                       [[${#numbers.formatDecimal(item.price - (item.price * item.discount / 100), 1, 'DEFAULT', 0, 'DEFAULT')} + ' đ']]
                                     </span>
                                 </h6>
-                                <a class="product-add1" title="Thêm giỏ hàng" th:if="${!outOfStock}" th:href="@{/addToCart(productId=${item.productId})}">
-                                    <i class="fas fa-shopping-basket"></i><span>Thêm giỏ hàng</span>
-                                </a>
+                                <form class="inline-action-form block-action-form"
+                                      th:if="${!outOfStock}"
+                                      th:action="@{/addToCart(productId=${item.productId})}" method="post">
+                                    <button class="product-add1" type="submit" title="Thêm giỏ hàng">
+                                        <i class="fas fa-shopping-basket"></i><span>Thêm giỏ hàng</span>
+                                    </button>
+                                </form>
                                 <span class="product-add1" th:if="${outOfStock}" style="pointer-events:none;opacity:.75;background:#6c757d;border-color:#6c757d;cursor:not-allowed;">
                                     <i class="fas fa-box-open"></i><span>Hết hàng</span>
                                 </span>
@@ -220,11 +230,17 @@
                                         <a title="Hãy đăng nhập" th:href="@{/login}" class="fas fa-heart"></a>
                                     </th:block>
                                     <th:block sec:authorize="isAuthenticated()">
-                                        <a th:if="${!item.favorite}" title="Yêu thích"
-                                           th:href="@{/doFavorite(id=${item.productId}, redirect = '/')}" class="fas fa-heart"></a>
-                                        <a th:if="${item.favorite}" title="Xóa Yêu thích"
-                                           th:href="@{/doUnFavorite(id=${item.productId}, redirect = '/')}"
-                                           style="background-color:#fd7e14" class="fas fa-heart"></a>
+                                        <form th:if="${!item.favorite}" class="inline-action-form"
+                                              th:action="@{/doFavorite(id=${item.productId}, redirect='/')}" method="post">
+                                            <button type="submit" title="Yêu thích"
+                                                    class="product-widget-action fas fa-heart"></button>
+                                        </form>
+                                        <form th:if="${item.favorite}" class="inline-action-form"
+                                              th:action="@{/doUnFavorite(id=${item.productId}, redirect='/')}" method="post">
+                                            <button type="submit" title="Xóa Yêu thích"
+                                                    style="background-color:#fd7e14"
+                                                    class="product-widget-action fas fa-heart"></button>
+                                        </form>
                                     </th:block>
 
                                     <a title="Product Video" href="https://youtu.be/9xzcVxSBbG8" class="venobox fas fa-play" data-autoplay="true" data-vbtype="video"></a>
@@ -246,9 +262,13 @@
                                       [[${#numbers.formatDecimal(item.price - (item.price * item.discount / 100), 1, 'DEFAULT', 0, 'DEFAULT')} + ' đ']]
                                     </span>
                                 </h6>
-                                <a class="product-add1" title="Thêm giỏ hàng" th:if="${!outOfStock}" th:href="@{/addToCart(productId=${item.productId})}">
-                                    <i class="fas fa-shopping-basket"></i><span>Thêm giỏ hàng</span>
-                                </a>
+                                <form class="inline-action-form block-action-form"
+                                      th:if="${!outOfStock}"
+                                      th:action="@{/addToCart(productId=${item.productId})}" method="post">
+                                    <button class="product-add1" type="submit" title="Thêm giỏ hàng">
+                                        <i class="fas fa-shopping-basket"></i><span>Thêm giỏ hàng</span>
+                                    </button>
+                                </form>
                                 <span class="product-add1" th:if="${outOfStock}" style="pointer-events:none;opacity:.75;background:#6c757d;border-color:#6c757d;cursor:not-allowed;">
                                     <i class="fas fa-box-open"></i><span>Hết hàng</span>
                                 </span>
@@ -334,11 +354,17 @@
                                         <a title="Hãy đăng nhập" th:href="@{/login}" class="fas fa-heart"></a>
                                     </th:block>
                                     <th:block sec:authorize="isAuthenticated()">
-                                        <a th:if="${!item.favorite}" title="Yêu thích"
-                                           th:href="@{/doFavorite(id=${item.productId}, redirect = '/')}" class="fas fa-heart"></a>
-                                        <a th:if="${item.favorite}" title="Xóa Yêu thích"
-                                           th:href="@{/doUnFavorite(id=${item.productId}, redirect = '/')}"
-                                           style="background-color:#fd7e14" class="fas fa-heart"></a>
+                                        <form th:if="${!item.favorite}" class="inline-action-form"
+                                              th:action="@{/doFavorite(id=${item.productId}, redirect='/')}" method="post">
+                                            <button type="submit" title="Yêu thích"
+                                                    class="product-widget-action fas fa-heart"></button>
+                                        </form>
+                                        <form th:if="${item.favorite}" class="inline-action-form"
+                                              th:action="@{/doUnFavorite(id=${item.productId}, redirect='/')}" method="post">
+                                            <button type="submit" title="Xóa Yêu thích"
+                                                    style="background-color:#fd7e14"
+                                                    class="product-widget-action fas fa-heart"></button>
+                                        </form>
                                     </th:block>
 
                                     <a title="Product Video" href="https://youtu.be/9xzcVxSBbG8" class="venobox fas fa-play" data-autoplay="true" data-vbtype="video"></a>
@@ -360,9 +386,13 @@
                                       [[${#numbers.formatDecimal(item.price - (item.price * item.discount / 100), 1, 'DEFAULT', 0, 'DEFAULT')} + ' đ']]
                                     </span>
                                 </h6>
-                                <a class="product-add1" title="Thêm giỏ hàng" th:if="${!outOfStock}" th:href="@{/addToCart(productId=${item.productId})}">
-                                    <i class="fas fa-shopping-basket"></i><span>Thêm giỏ hàng</span>
-                                </a>
+                                <form class="inline-action-form block-action-form"
+                                      th:if="${!outOfStock}"
+                                      th:action="@{/addToCart(productId=${item.productId})}" method="post">
+                                    <button class="product-add1" type="submit" title="Thêm giỏ hàng">
+                                        <i class="fas fa-shopping-basket"></i><span>Thêm giỏ hàng</span>
+                                    </button>
+                                </form>
                                 <span class="product-add1" th:if="${outOfStock}" style="pointer-events:none;opacity:.75;background:#6c757d;border-color:#6c757d;cursor:not-allowed;">
                                     <i class="fas fa-box-open"></i><span>Hết hàng</span>
                                 </span>
@@ -461,7 +491,7 @@
 </section>
 
 <!-- Footer -->
-<footer th:replace="~{/web/fragments/footer :: footer}"></footer>
+<footer th:replace="~{web/fragments/footer :: footer}"></footer>
 
 <!-- JS -->
 <script th:src="@{/vendor/bootstrap/jquery-1.12.4.min.js}"></script>

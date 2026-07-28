@@ -71,22 +71,22 @@ public class OrderController {
         return "admin/editOrder";
     }
 
-    @RequestMapping("/order/cancel/{order_id}")
+    @PostMapping("/order/cancel/{order_id}")
     public String cancel(@PathVariable("order_id") Long id) {
         orderService.cancel(id);
-        return "forward:/admin/orders";
+        return "redirect:/admin/orders";
     }
 
-    @RequestMapping("/order/confirm/{order_id}")
+    @PostMapping("/order/confirm/{order_id}")
     public String confirm(@PathVariable("order_id") Long id) {
         orderService.confirm(id);
-        return "forward:/admin/orders";
+        return "redirect:/admin/orders";
     }
 
-    @RequestMapping("/order/delivered/{order_id}")
+    @PostMapping("/order/delivered/{order_id}")
     public String delivered(@PathVariable("order_id") Long id) {
         orderService.deliveredAndDecreaseStock(id);
-        return "forward:/admin/orders";
+        return "redirect:/admin/orders";
     }
 
     @GetMapping("/export")

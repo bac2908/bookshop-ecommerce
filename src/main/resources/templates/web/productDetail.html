@@ -20,7 +20,7 @@
 <body>
 
 <!-- Header -->
-<header th:replace="~{/web/fragments/header :: header}"></header>
+<header th:replace="~{web/fragments/header :: header}"></header>
 
 <!-- Banner -->
 <section class="inner-section single-banner"
@@ -127,28 +127,35 @@
                         <th:block sec:authorize="isAuthenticated()">
 
                             <!-- Nếu chưa favorite -->
-                            <a th:if="${p.favorite == null or !p.favorite}"
-                               class="btn btn-outline-danger"
-                               th:href="@{/doFavorite(id=${p.productId}, redirect='/productDetail?id=' + ${p.productId})}">
-                                <i class="fas fa-heart me-1"></i> Thêm vào yêu thích
-                            </a>
+                            <form th:if="${p.favorite == null or !p.favorite}"
+                                  class="inline-action-form"
+                                  th:action="@{/doFavorite(id=${p.productId}, redirect='/productDetail?id=' + ${p.productId})}"
+                                  method="post">
+                                <button type="submit" class="btn btn-outline-danger">
+                                    <i class="fas fa-heart me-1"></i> Thêm vào yêu thích
+                                </button>
+                            </form>
 
                             <!-- Nếu đã favorite -->
-                            <a th:if="${p.favorite != null and p.favorite}"
-                               class="btn btn-danger"
-                               th:href="@{/doUnFavorite(id=${p.productId}, redirect='/productDetail?id=' + ${p.productId})}">
-                                <i class="fas fa-heart me-1"></i> Bỏ yêu thích
-                            </a>
+                            <form th:if="${p.favorite != null and p.favorite}"
+                                  class="inline-action-form"
+                                  th:action="@{/doUnFavorite(id=${p.productId}, redirect='/productDetail?id=' + ${p.productId})}"
+                                  method="post">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-heart me-1"></i> Bỏ yêu thích
+                                </button>
+                            </form>
 
                         </th:block>
 
 
                         <!-- Thêm giỏ hàng (logic y như shop.html) -->
-                        <a class="btn btn-gradient"
-                           th:if="${!outOfStock}"
-                           th:href="@{/addToCart(productId=${p.productId})}">
-                            <i class="fas fa-shopping-basket me-1"></i> Thêm giỏ hàng
-                        </a>
+                        <form th:if="${!outOfStock}" class="inline-action-form"
+                              th:action="@{/addToCart(productId=${p.productId})}" method="post">
+                            <button type="submit" class="btn btn-gradient">
+                                <i class="fas fa-shopping-basket me-1"></i> Thêm giỏ hàng
+                            </button>
+                        </form>
                         <button class="btn btn-secondary" th:if="${outOfStock}" disabled>
                             <i class="fas fa-box-open me-1"></i> Hết hàng
                         </button>
@@ -205,7 +212,7 @@
 </section>
 
 <!-- Footer -->
-<footer th:replace="~{/web/fragments/footer :: footer}"></footer>
+<footer th:replace="~{web/fragments/footer :: footer}"></footer>
 
 <!-- Vendor JS của theme (nếu cần) -->
 <script th:src="@{/vendor/bootstrap/jquery-1.12.4.min.js}"></script>

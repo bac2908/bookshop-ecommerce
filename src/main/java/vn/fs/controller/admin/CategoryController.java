@@ -133,7 +133,7 @@ public class CategoryController {
 
     /* ẩn category + ẩn toàn bộ sản phẩm con; nếu không còn sp tham chiếu thì xóa cứng
        giữ nguyên path /delete/{id} để không vỡ link cũ */
-    @GetMapping("/delete/{id}")
+    @PostMapping("/delete/{id}")
     public String hide(@PathVariable("id") Long id, RedirectAttributes ra) {
         var opt = categoryService.findById(id);
         if (opt.isEmpty()) {
@@ -154,7 +154,7 @@ public class CategoryController {
     }
 
     /* khôi phục category (không tự mở sp con) */
-    @RequestMapping(value = "/restoreCategory/{id}", method = {RequestMethod.GET, RequestMethod.POST})
+    @PostMapping("/restoreCategory/{id}")
     public String restore(@PathVariable("id") Long id, RedirectAttributes ra) {
         categoryService.restore(id);
         productService.restoreByCategory(id);

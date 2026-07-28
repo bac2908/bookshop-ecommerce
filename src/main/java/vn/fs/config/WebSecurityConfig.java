@@ -3,6 +3,7 @@ package vn.fs.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -10,9 +11,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import vn.fs.security.PreLoginLockFilter;
 import vn.fs.security.CustomAuthenticationFailureHandler;
+import vn.fs.security.PreLoginLockFilter;
 import vn.fs.service.UserDetailService;
 
 @Configuration
@@ -25,7 +25,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired private PreLoginLockFilter preLoginLockFilter;
 
     @Bean
-    public BCryptPasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
@@ -47,45 +49,36 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.csrf().disable();
-
         http.authorizeRequests()
-                .antMatchers("/css/**","/js/**","/images/**","/vendor/**","/fonts/**",
-                        "/assets/**","/uploads/**").permitAll()
+                .antMatchers("/css/**", "/js/**", "/images/**", "/vendor/**", "/fonts/**",
+                        "/assets/**", "/uploads/**").permitAll()
 
-                // mở webhook (không yêu cầu đăng nhập)
-                .antMatchers("/webhook/paypal").permitAll()
+                .antMatchers(HttpMethod.GET, "/", "/home", "/login", "/register",
+                        "/confirmOtpRegister", "/products", "/productDetail",
+                        "/productByCategory", "/productByPublisher", "/searchProduct",
+                        "/aboutUs", "/contact", "/loadImage", "/forgotPassword",
+                        "/confirmOtpForgotPassword", "/changePassword", "/error").permitAll()
 
-                // Public
-                .antMatchers("/","/login","/register",
-                        "/products","/productDetail","/productByCategory","/productByPublisher",
-                        "/searchProduct","/aboutUs","/contact","/loadImage").permitAll()
+                .antMatchers(HttpMethod.POST, "/register", "/confirmOtpRegister",
+                        "/forgotPassword", "/confirmOtpForgotPassword",
+                        "/resendOtpForgotPassword", "/changePassword").permitAll()
 
-                // Forgot password
-                .antMatchers("/forgotPassword","/confirmOtpForgotPassword",
-                        "/resendOtpForgotPassword","/changePassword").permitAll()
+                .antMatchers("/admin/reports", "/admin/reportCategory",
+                        "/admin/reportYear", "/admin/reportMonth", "/admin/reportQuarter",
+                        "/admin/reportOrderCustomer", "/admin/report-order-customer",
+                        "/admin/report/customer").hasRole("ADMIN")
 
-                // Cart (login)
-                .antMatchers("/addToCart","/remove/**","/cart/**",
-                        "/shoppingCart_checkout","/checkout").authenticated()
+                .antMatchers("/admin/**").hasAnyRole("ADMIN", "STAFF")
 
-                // Admin – các báo cáo
-                .antMatchers("/admin/reports",
-                        "/admin/reportCategory",
-                        "/admin/reportYear",
-                        "/admin/reportMonth",
-                        "/admin/reportQuarter",
-                        "/admin/reportOrderCustomer",
-                        "/admin/report-order-customer",
-                        "/admin/report/customer")
-                .hasRole("ADMIN")
+                .antMatchers("/addToCart", "/remove/**", "/cart/**",
+                        "/shoppingCart_checkout", "/checkout", "/pay/**",
+                        "/checkout_success", "/checkout_paypal_success").authenticated()
 
-                .antMatchers("/admin/**").hasAnyRole("ADMIN","STAFF")
+                .antMatchers("/favorite/**", "/doFavorite", "/doUnFavorite",
+                        "/profile/**", "/order/**").authenticated()
 
-                // Favorite/Profile
-                .antMatchers("/favorite/**","/profile").authenticated()
-
-                .anyRequest().permitAll()
+                // An endpoint added later is private unless explicitly made public.
+                .anyRequest().authenticated()
                 .and()
                 .formLogin()
                 .loginProcessingUrl("/doLogin")
@@ -99,14 +92,14 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .logout()
                 .invalidateHttpSession(true)
                 .clearAuthentication(true)
-                .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+                .logoutUrl("/logout")
                 .logoutSuccessUrl("/?logout_success")
                 .permitAll()
                 .and()
                 .rememberMe()
                 .rememberMeParameter("remember");
 
-        // chặn trước khi auth nếu bị lock
+        // CSRF remains enabled (Spring Security's secure default).
         http.addFilterBefore(preLoginLockFilter, UsernamePasswordAuthenticationFilter.class);
     }
 }

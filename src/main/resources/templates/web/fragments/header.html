@@ -173,7 +173,11 @@
                                     <th:block sec:authorize="isAuthenticated()">
                                         <li><a th:href="@{/profile}">Thông tin tài khoản</a></li>
                                         <li><a th:href="@{/profile/change-password}">Đổi Mật khẩu</a></li>
-                                        <li><a th:href="@{/logout}">Đăng xuất</a></li>
+                                        <li>
+                                            <form class="inline-action-form" th:action="@{/logout}" method="post">
+                                                <button class="inline-action-button" type="submit">Đăng xuất</button>
+                                            </form>
+                                        </li>
                                     </th:block>
                                 </ul>
                             </li>
@@ -247,16 +251,20 @@
                              ">
                             <div class="qty-row">
                                 <!-- DEC: khoá khi q<=1 -->
-                                <a class="qty-btn"
-                                   th:href="@{/cart/dec(productId=${item.product.productId}, redirect='mini')}"
-                                   th:attr="aria-disabled=${q <= 1}">−</a>
+                                <form class="inline-action-form"
+                                      th:action="@{/cart/dec(productId=${item.product.productId}, redirect='mini')}"
+                                      method="post">
+                                    <button class="qty-btn" type="submit" th:disabled="${q <= 1}">−</button>
+                                </form>
 
                                 <input class="qty-input" type="tel" th:value="${q}" readonly />
 
                                 <!-- INC: khoá khi q>=max -->
-                                <a class="qty-btn"
-                                   th:href="@{/cart/inc(productId=${item.product.productId}, redirect='mini')}"
-                                   th:attr="aria-disabled=${q >= max}">+</a>
+                                <form class="inline-action-form"
+                                      th:action="@{/cart/inc(productId=${item.product.productId}, redirect='mini')}"
+                                      method="post">
+                                    <button class="qty-btn" type="submit" th:disabled="${q >= max}">+</button>
+                                </form>
                             </div>
 
                             <div class="stock-row"
@@ -265,10 +273,12 @@
                                 <span th:if="${left != null}">Còn: <span class="stock">[[${left < 0 ? 0 : left}]]</span></span>
                             </div>
 
-                            <a class="rm-btn" title="Xoá"
-                               th:href="@{/remove/{id}(id=${item.product.productId})}">
-                                <i class="icofont-trash"></i>
-                            </a>
+                            <form class="inline-action-form"
+                                  th:action="@{/remove/{id}(id=${item.product.productId})}" method="post">
+                                <button class="rm-btn" type="submit" title="Xoá">
+                                    <i class="icofont-trash"></i>
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </li>

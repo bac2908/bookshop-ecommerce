@@ -24,7 +24,7 @@
     <link rel="stylesheet" th:href="@{/css/wishlist.css}" />
 </head>
 <body>
-<header th:replace="~{/web/fragments/header :: header}"></header>
+<header th:replace="~{web/fragments/header :: header}"></header>
 
 <section class="inner-section single-banner"
          th:style="|background: url(@{/images/singlebanner.jpg}) no-repeat center|">
@@ -89,11 +89,13 @@
 
                             <td class="table-shop">
                                 <!-- Y hệt shop.html: còn hàng -> nút active; hết hàng -> disabled -->
-                                <a class="product-add1" title="Thêm giỏ hàng"
-                                   th:if="${!outOfStock}"
-                                   th:href="@{/addToCart(productId=${item.product.productId})}">
-                                    Thêm giỏ hàng
-                                </a>
+                                <form class="inline-action-form block-action-form"
+                                      th:if="${!outOfStock}"
+                                      th:action="@{/addToCart(productId=${item.product.productId})}" method="post">
+                                    <button class="product-add1" type="submit" title="Thêm giỏ hàng">
+                                        Thêm giỏ hàng
+                                    </button>
+                                </form>
 
                                 <span th:if="${outOfStock}"
                                       class="product-add1"
@@ -109,11 +111,13 @@
                                     <i class="fas fa-eye"></i>
                                 </a>
 
-                                <a class="trash"
-                                   th:href="@{/doUnFavorite(id=${item.product.productId})}"
-                                   title="Xóa yêu thích">
-                                    <i class="icofont-trash"></i>
-                                </a>
+                                <form class="inline-action-form"
+                                      th:action="@{/doUnFavorite(id=${item.product.productId})}" method="post">
+                                    <button class="trash inline-action-button" type="submit"
+                                            title="Xóa yêu thích">
+                                        <i class="icofont-trash"></i>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                         </tbody>
@@ -188,7 +192,7 @@
     </div>
 </section>
 
-<footer th:replace="~{/web/fragments/footer :: footer}"></footer>
+<footer th:replace="~{web/fragments/footer :: footer}"></footer>
 
 <script th:src="@{/vendor/bootstrap/jquery-1.12.4.min.js}"></script>
 <script th:src="@{/vendor/bootstrap/popper.min.js}"></script>

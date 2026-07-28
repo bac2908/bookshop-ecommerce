@@ -82,6 +82,14 @@ body.orders-page .orders__badge--muted{ color:#6c757d; font-weight:700; }
 
 body.orders-page .orders__muted{ color:var(--muted); font-size:.9rem; }
 
+body.orders-page .inline-action-button{
+    padding:0;
+    border:0;
+    background:transparent;
+    cursor:pointer;
+    font:inherit;
+}
+
 /* Responsive */
 @media (max-width: 992px){
     body.orders-page .orders__field{ width:100%; }

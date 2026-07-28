@@ -164,7 +164,9 @@
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                                                                    <a class="btn btn-danger" th:href="@{/admin/deleteNxb/{id}(id=${item.id})}">Xác nhận Ẩn</a>
+                                                                    <form th:action="@{/admin/deleteNxb/{id}(id=${item.id})}" method="post">
+                                                                        <button class="btn btn-danger" type="submit">Xác nhận Ẩn</button>
+                                                                    </form>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -196,7 +198,9 @@
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                                                                    <a class="btn btn-success" th:href="@{/admin/restoreNxb/{id}(id=${item.id})}">Xác nhận</a>
+                                                                    <form th:action="@{/admin/restoreNxb/{id}(id=${item.id})}" method="post">
+                                                                        <button class="btn btn-success" type="submit">Xác nhận</button>
+                                                                    </form>
                                                                 </div>
                                                             </div>
                                                         </div>

@@ -156,8 +156,7 @@ public class ProductController {
     }
 
     // nhập thêm kho (cho phép /increaseStock/{id} hoặc /increaseStock/{id}/{qty})
-    @RequestMapping(value = {"/increaseStock/{id}", "/increaseStock/{id}/{qty}"},
-            method = {RequestMethod.GET, RequestMethod.POST})
+    @PostMapping({"/increaseStock/{id}", "/increaseStock/{id}/{qty}"})
     public String increaseStock(@PathVariable Long id,
                                 @PathVariable(value = "qty", required = false) Integer qtyInPath,
                                 @RequestParam(value = "qty", required = false) Integer qtyParam,
@@ -186,7 +185,7 @@ public class ProductController {
     }
 
     // xoá: nếu có đơn → ẩn, còn lại xoá cứng
-    @RequestMapping(value = "/deleteProduct/{id}", method = {RequestMethod.POST, RequestMethod.DELETE, RequestMethod.GET})
+    @PostMapping("/deleteProduct/{id}")
     public String delete(@PathVariable Long id, RedirectAttributes ra) {
         var opt = productService.findById(id);
         if (opt.isEmpty()) {
@@ -206,7 +205,7 @@ public class ProductController {
     }
 
     // mở bán lại
-    @RequestMapping(value = "/restoreProduct/{id}", method = {RequestMethod.POST, RequestMethod.PUT, RequestMethod.GET})
+    @PostMapping("/restoreProduct/{id}")
     public String restore(@PathVariable Long id, RedirectAttributes ra) {
         productService.restore(id);
         ra.addFlashAttribute("message", "Đã mở bán lại sản phẩm.");

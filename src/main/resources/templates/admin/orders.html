@@ -141,11 +141,17 @@
                                         <td><a class="orders__link" th:href="@{'/admin/order/detail/' + ${item.orderId}}">Chi tiết</a></td>
                                         <td class="text-center">
                                             <div th:if="${item.status == 0}">
-                                                <a th:href="@{'/admin/order/confirm/' + ${item.orderId}}" class="orders__action--primary d-block">Xác nhận</a>
-                                                <a th:href="@{'/admin/order/cancel/' + ${item.orderId}}" class="orders__action--danger d-block mt-1">Hủy đơn</a>
+                                                <form th:action="@{'/admin/order/confirm/' + ${item.orderId}}" method="post">
+                                                    <button type="submit" class="orders__action--primary inline-action-button">Xác nhận</button>
+                                                </form>
+                                                <form class="mt-1" th:action="@{'/admin/order/cancel/' + ${item.orderId}}" method="post">
+                                                    <button type="submit" class="orders__action--danger inline-action-button">Hủy đơn</button>
+                                                </form>
                                             </div>
                                             <div th:if="${item.status == 1}">
-                                                <a th:href="@{'/admin/order/delivered/' + ${item.orderId}}" class="orders__action--warning">Xác nhận đã giao</a>
+                                                <form th:action="@{'/admin/order/delivered/' + ${item.orderId}}" method="post">
+                                                    <button type="submit" class="orders__action--warning inline-action-button">Xác nhận đã giao</button>
+                                                </form>
                                             </div>
                                             <div th:if="${item.status == 2}">
                                                 <div class="orders__badge--success mb-1">Đã thanh toán</div>

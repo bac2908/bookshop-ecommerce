@@ -124,6 +124,13 @@ public class ProfileController extends CommomController {
             return new ModelAndView("redirect:/login");
         }
 
+        Optional<Order> order = orderRepository.findById(id);
+        if (order.isEmpty()
+                || order.get().getUser() == null
+                || !current.getUserId().equals(order.get().getUser().getUserId())) {
+            return new ModelAndView("redirect:/profile");
+        }
+
         model.addAttribute("user", current);
         List<OrderDetail> listO = orderDetailRepository.findByOrderId(id);
         model.addAttribute("orderDetail", listO);
@@ -131,15 +138,32 @@ public class ProfileController extends CommomController {
         return new ModelAndView("web/historyOrderDetail");
     }
 
-    @RequestMapping("/order/cancel/{order_id}")
-    public ModelAndView cancel(ModelMap model, @PathVariable("order_id") Long id) {
+    @PostMapping("/order/cancel/{order_id}")
+    public ModelAndView cancel(ModelMap model,
+                               Principal principal,
+                               @PathVariable("order_id") Long id,
+                               RedirectAttributes ra) {
+        User current = resolveCurrentUser(principal);
+        if (current == null) {
+            return new ModelAndView("redirect:/login", model);
+        }
+
         Optional<Order> o = orderRepository.findById(id);
-        if (o.isEmpty()) {
+        if (o.isEmpty()
+                || o.get().getUser() == null
+                || !current.getUserId().equals(o.get().getUser().getUserId())) {
+            ra.addFlashAttribute("err", "Không tìm thấy đơn hàng.");
             return new ModelAndView("redirect:/profile", model);
         }
+
         Order oReal = o.get();
-        oReal.setStatus((short) 3);
+        if (oReal.getStatus() != 0) {
+            ra.addFlashAttribute("err", "Chỉ có thể hủy đơn đang chờ xác nhận.");
+            return new ModelAndView("redirect:/profile", model);
+        }
+        oReal.setStatus(3);
         orderRepository.save(oReal);
+        ra.addFlashAttribute("ok", "Đã hủy đơn hàng.");
         return new ModelAndView("redirect:/profile", model);
     }
 

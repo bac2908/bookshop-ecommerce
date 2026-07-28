@@ -6280,3 +6280,47 @@ tbody tr td:last-child {
 .home-index-slider .slick-dots {
     bottom: 12px;
 }
+
+/* POST actions styled like the links they replaced. */
+.inline-action-form {
+    display: inline;
+    margin: 0;
+    padding: 0;
+}
+.block-action-form {
+    display: block;
+    width: 100%;
+}
+.inline-action-button {
+    padding: 0;
+    border: 0;
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+}
+.product-widget .product-widget-action {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    margin: 0 6px;
+    color: var(--white);
+    background: var(--primary);
+    line-height: 40px;
+    text-align: center;
+    cursor: pointer;
+    text-shadow: var(-primary-tshadow);
+    box-shadow: 0 7px 12px 0 rgba(0, 0, 0, 0.12);
+}
+.product-add1 {
+    border: 0;
+    cursor: pointer;
+}
+.table-action button.trash {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}

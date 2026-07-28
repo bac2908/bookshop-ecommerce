@@ -12,6 +12,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Locale;
+import java.util.Set;
 
 @Controller
 public class LoadImageController {
@@ -21,6 +25,8 @@ public class LoadImageController {
 
     // Ảnh dự phòng nằm trong src/main/resources/static/images/no-image.png
     private static final String FALLBACK_CLASSPATH = "/static/images/no-image.png";
+    private static final Set<String> ALLOWED_EXTENSIONS =
+            Set.of(".jpg", ".jpeg", ".png", ".gif", ".webp");
 
     @GetMapping(value = "loadImage", produces = MediaType.ALL_VALUE)
     @ResponseBody
@@ -30,27 +36,35 @@ public class LoadImageController {
         response.setHeader("Cache-Control", "max-age=86400");
 
         if (!StringUtils.hasText(imageName)
-                || imageName.contains("..")
-                || imageName.contains("/") || imageName.contains("\\")
-                && (new File(pathUploadImage, imageName)).isDirectory()) {
+                || imageName.contains("/")
+                || imageName.contains("\\")) {
             return fallbackBytes(response);
         }
 
-        File file = new File(pathUploadImage, imageName);
-        if (!file.exists() || !file.isFile() || !file.canRead()) {
+        String lower = imageName.toLowerCase(Locale.ROOT);
+        if (ALLOWED_EXTENSIONS.stream().noneMatch(lower::endsWith)) {
             return fallbackBytes(response);
         }
 
-        String lower = imageName.toLowerCase();
+        Path uploadRoot = Path.of(pathUploadImage).toAbsolutePath().normalize();
+        Path imagePath = uploadRoot.resolve(imageName).normalize();
+        if (!imagePath.startsWith(uploadRoot)
+                || !Files.isRegularFile(imagePath)
+                || !Files.isReadable(imagePath)) {
+            return fallbackBytes(response);
+        }
+
         if (lower.endsWith(".png")) {
             response.setContentType(MediaType.IMAGE_PNG_VALUE);
         } else if (lower.endsWith(".gif")) {
             response.setContentType(MediaType.IMAGE_GIF_VALUE);
+        } else if (lower.endsWith(".webp")) {
+            response.setContentType("image/webp");
         } else {
             response.setContentType(MediaType.IMAGE_JPEG_VALUE);
         }
 
-        try (InputStream is = new FileInputStream(file)) {
+        try (InputStream is = Files.newInputStream(imagePath)) {
             return IOUtils.toByteArray(is);
         } catch (Exception ex) {
             return fallbackBytes(response);

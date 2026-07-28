@@ -183,7 +183,9 @@
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                                                                    <a class="btn btn-danger" th:href="@{/admin/delete/{id}(id=${item.categoryId})}">Xác nhận Ẩn</a>
+                                                                    <form th:action="@{/admin/delete/{id}(id=${item.categoryId})}" method="post">
+                                                                        <button class="btn btn-danger" type="submit">Xác nhận Ẩn</button>
+                                                                    </form>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -212,7 +214,9 @@
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                                                                    <a class="btn btn-success" th:href="@{/admin/restoreCategory/{id}(id=${item.categoryId})}">Xác nhận</a>
+                                                                    <form th:action="@{/admin/restoreCategory/{id}(id=${item.categoryId})}" method="post">
+                                                                        <button class="btn btn-success" type="submit">Xác nhận</button>
+                                                                    </form>
                                                                 </div>
                                                             </div>
                                                         </div>
