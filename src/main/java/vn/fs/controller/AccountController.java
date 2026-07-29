@@ -12,8 +12,8 @@ import vn.fs.dto.ChangePassword;
 import vn.fs.entities.User;
 import vn.fs.repository.UserRepository;
 
-import javax.servlet.http.HttpSession;
-import javax.validation.Valid;
+import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Random;

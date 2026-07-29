@@ -1,7 +1,7 @@
 package vn.fs.dto;
 
 import lombok.*;
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

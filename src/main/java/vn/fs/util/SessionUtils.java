@@ -5,7 +5,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import vn.fs.dto.SessionUser;
 import vn.fs.entities.User;
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 
 public final class SessionUtils {
     private SessionUtils() {}

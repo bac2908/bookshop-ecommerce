@@ -2,7 +2,7 @@ package vn.fs.dto;
 
 import lombok.Data;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 
 @Data
 public class CheckoutAddressDTO {

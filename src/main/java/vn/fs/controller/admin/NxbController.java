@@ -11,7 +11,7 @@ import vn.fs.entities.NXB;
 import vn.fs.service.NxbService;
 import vn.fs.service.ProductService;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.Optional;
 
 @Controller

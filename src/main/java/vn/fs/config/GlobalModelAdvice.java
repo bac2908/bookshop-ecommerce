@@ -13,7 +13,7 @@ import vn.fs.dto.SessionUser;
 import vn.fs.entities.User;
 import vn.fs.repository.UserRepository;
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
  // Inject các dữ liệu dùng chung cho layout (header/footer/nav) theo mô hình MVC.
  // QUAN TRỌNG:
  //Chỉ thực hiện READ-ONLY.

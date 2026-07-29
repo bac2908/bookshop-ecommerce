@@ -18,9 +18,9 @@ import vn.fs.service.impl.ExchangeRateService;
 import vn.fs.service.paypal.PaypalOrdersV2Service;
 import vn.fs.util.Utils;
 
-import javax.mail.MessagingException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.mail.MessagingException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Collection;

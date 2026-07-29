@@ -19,7 +19,7 @@ import vn.fs.dto.SessionUser;
 import vn.fs.entities.*;
 import vn.fs.repository.*;
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 public class ShopController {

@@ -3,7 +3,7 @@ package vn.fs.dto;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 import java.util.Date;
 
 @Data

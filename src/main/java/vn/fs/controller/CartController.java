@@ -1,10 +1,10 @@
 package vn.fs.controller;
 
 import java.util.Collection;
-import javax.mail.MessagingException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-import javax.transaction.Transactional;
+import jakarta.mail.MessagingException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import jakarta.transaction.Transactional;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -29,7 +29,7 @@ import vn.fs.repository.UserRepository;
 import vn.fs.service.CheckoutService;
 import vn.fs.service.ShoppingCartService;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 @Controller
 public class CartController extends CommomController {

@@ -7,9 +7,9 @@ import org.springframework.stereotype.Component;
 import vn.fs.service.IpLockService;
 import vn.fs.service.UserLockService;
 
-import javax.servlet.ServletException;               // <--- chắc chắn import javax (Boot 2.x)
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;               // <--- chắc chắn import javax (Boot 2.x)
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @Component

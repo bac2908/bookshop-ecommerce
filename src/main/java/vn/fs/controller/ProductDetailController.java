@@ -18,7 +18,7 @@ import vn.fs.repository.ProductRepository;
 import vn.fs.repository.UserRepository;
 import vn.fs.util.SessionUtils;
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 
 
 @Controller

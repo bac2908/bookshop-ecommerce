@@ -2,7 +2,7 @@ package vn.fs.repository;
 
 import java.util.List;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;

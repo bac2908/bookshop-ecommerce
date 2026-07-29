@@ -1,15 +1,20 @@
 # TMDT Bookshop
 
-Ứng dụng bán sách dùng Java 17, Spring Boot 2.5, Thymeleaf, Spring Security,
+Ứng dụng bán sách dùng Java 17, Spring Boot 3.5.16, Thymeleaf, Spring Security,
 Spring Data JPA, MySQL và Flyway.
 
 ## Toolchain cố định
 
 - JDK: 17
+- Spring Boot: 3.5.16
 - Maven Wrapper: 3.3.4
 - Maven: 3.9.11
 - Lombok: 1.18.46
 - Maven Compiler Plugin: 3.15.0
+
+Mã nguồn đã chuyển sang Jakarta EE (`jakarta.persistence`, `jakarta.servlet`,
+`jakarta.validation`, `jakarta.mail`) và Spring Security dùng cấu hình
+`SecurityFilterChain`.
 
 Build sẽ dừng ngay nếu chạy bằng JDK khác Java 17. Wrapper có checksum SHA-256
 cho cả Maven distribution và wrapper JAR.

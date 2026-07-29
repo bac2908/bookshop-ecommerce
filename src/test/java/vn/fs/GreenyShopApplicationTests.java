@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -51,6 +52,16 @@ class GreenyShopApplicationTests {
 		mockMvc.perform(get("/profile"))
 				.andExpect(status().is3xxRedirection())
 				.andExpect(redirectedUrlPattern("**/login"));
+	}
+
+	@Test
+	void invalidLoginUsesCustomFailureHandler() throws Exception {
+		mockMvc.perform(post("/doLogin")
+						.with(csrf())
+						.param("username", "missing-user")
+						.param("password", "invalid-password"))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrl("/login?error"));
 	}
 
 	@Test

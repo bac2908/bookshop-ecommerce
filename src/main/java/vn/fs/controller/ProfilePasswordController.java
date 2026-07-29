@@ -13,7 +13,7 @@ import vn.fs.dto.ChangePasswordInProfile;
 import vn.fs.entities.User;
 import vn.fs.repository.UserRepository;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.Optional;
 
 @Controller

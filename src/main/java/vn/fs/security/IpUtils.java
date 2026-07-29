@@ -1,6 +1,6 @@
 package vn.fs.security;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 public final class IpUtils {
     private IpUtils() {

@@ -15,7 +15,7 @@ import vn.fs.service.ImageStorageService;
 import vn.fs.repository.UserRepository;
 import vn.fs.service.ProductService;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.security.Principal;
 
 @Controller

@@ -15,8 +15,8 @@ import vn.fs.entities.User;
 import vn.fs.repository.RoleRepository;
 import vn.fs.repository.UserRepository;
 
-import javax.servlet.http.HttpSession;
-import javax.validation.Valid;
+import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashSet;
