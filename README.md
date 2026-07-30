@@ -11,6 +11,12 @@ Yêu cầu duy nhất: Docker Desktop đang chạy.
 docker compose up -d --build
 ```
 
+REST API và tài liệu phát triển:
+
+- Swagger UI: http://localhost:8080/swagger-ui.html
+- OpenAPI JSON: http://localhost:8080/v3/api-docs/bookshop-v1
+- Quy ước API: [`docs/API.md`](docs/API.md)
+
 Sau khi hai container ở trạng thái chạy, mở:
 
 - Website: http://localhost:8080

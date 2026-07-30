@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 import vn.fs.backend.domain.model.Product;
 
 @Repository
-public interface ProductRepository extends JpaRepository<Product, Long> {
+public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
 
     @Query("SELECT COUNT(p) FROM Product p WHERE p.status = true AND p.category.categoryId = :categoryId")
     long countActiveByCategory(@Param("categoryId") Long categoryId);

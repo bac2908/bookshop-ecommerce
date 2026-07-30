@@ -24,6 +24,11 @@ public class NxbService {
         return nxbRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
+    public List<NXB> findActive() {
+        return nxbRepository.findByStatusTrueOrderByNameAsc();
+    }
+
     // Lấy NXB theo id
     public Optional<NXB> findById(Long id) {
         return nxbRepository.findById(id);

@@ -6,6 +6,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import vn.fs.backend.application.dto.ProductDTO;
 import vn.fs.backend.domain.model.Product;
 import vn.fs.backend.infrastructure.persistence.CategoryRepository;
@@ -31,6 +34,34 @@ public class ProductService {
     /* ---------- Query ---------- */
     public List<Product> findAll() { return productRepository.findAll(); }
     public Optional<Product> findById(Long id) { return productRepository.findById(id); }
+    @Transactional(readOnly = true)
+    public Optional<Product> findActiveById(Long id) {
+        return productRepository.findOne((root, query, criteriaBuilder) ->
+                criteriaBuilder.and(
+                        criteriaBuilder.equal(root.get("productId"), id),
+                        criteriaBuilder.isTrue(root.get("status"))));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Product> findActive(String keyword, Long categoryId, Long publisherId, Pageable pageable) {
+        Specification<Product> specification = (root, query, criteriaBuilder) ->
+                criteriaBuilder.isTrue(root.get("status"));
+
+        if (StringUtils.isNotBlank(keyword)) {
+            String normalizedKeyword = "%" + keyword.trim().toLowerCase() + "%";
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("productName")), normalizedKeyword));
+        }
+        if (categoryId != null) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("category").get("categoryId"), categoryId));
+        }
+        if (publisherId != null) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("nxb").get("id"), publisherId));
+        }
+        return productRepository.findAll(specification, pageable);
+    }
     public boolean nameExists(String name) { return productRepository.existsByProductNameIgnoreCase(name); }
     public boolean nameExistsOther(String name, Long excludeId) {
         return productRepository.existsByProductNameIgnoreCaseAndProductIdNot(name, excludeId);

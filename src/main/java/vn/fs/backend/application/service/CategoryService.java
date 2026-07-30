@@ -26,6 +26,11 @@ public class CategoryService {
         return categoryRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
+    public List<Category> findActive() {
+        return categoryRepository.findByStatusTrueOrderByCategoryNameAsc();
+    }
+
     /* lấy theo id để sửa */
     public Optional<Category> findById(Long id) {
         return categoryRepository.findById(id);
