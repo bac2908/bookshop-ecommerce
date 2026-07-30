@@ -24,9 +24,21 @@
         <maven.resources.encoding>UTF-8</maven.resources.encoding>
         <project.build.outputTimestamp>2026-01-01T00:00:00Z</project.build.outputTimestamp>
         <lombok.version>1.18.46</lombok.version>
+        <commons-io.version>2.22.0</commons-io.version>
         <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
         <maven-enforcer-plugin.version>3.6.3</maven-enforcer-plugin.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <!-- Spring starters -->
         <dependency>
@@ -79,21 +91,9 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.8.0</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
-            <version>4.1.0</version>
-        </dependency>
-
-        <!-- PayPal -->
-        <dependency>
-            <groupId>com.paypal.sdk</groupId>
-            <artifactId>rest-api-sdk</artifactId>
-            <version>1.4.2</version>
+            <version>5.5.1</version>
         </dependency>
 
         <!-- Devtools -->
@@ -146,7 +146,7 @@
                             <rules>
                                 <requireJavaVersion>
                                     <version>[17,18)</version>
-                                    <message>Build requires JDK 17. Run .\run-local.ps1 or set JAVA_HOME to JDK 17.</message>
+                                    <message>Build requires JDK 17. Set JAVA_HOME or build with Docker Compose.</message>
                                 </requireJavaVersion>
                                 <requireMavenVersion>
                                     <version>[3.9.11,3.9.12)</version>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta charset="UTF-8"/>
+    <title>BOOK_SHOP - Trang quản trị</title>
+    <meta content="width=device-width, initial-scale=1.0, shrink-to-fit=no" name="viewport"/>
+    <link rel="icon" href="/admin-assets/img/icon.ico" type="image/x-icon"/>
+
+    <!-- Fonts and icons -->
+    <script src="/admin-assets/js/plugin/webfont/webfont.min.js"></script>
+    <script>
+        WebFont.load({
+            google: {"families": ["Lato:300,400,700,900"]},
+            custom: {"families": ["Flaticon", "Font Awesome 5 Solid", "Font Awesome 5 Regular", "Font Awesome 5 Brands", "simple-line-icons"], urls: ['/admin-assets/css/fonts.min.css']},
+            active: function () { sessionStorage.fonts = true; }
+        });
+    </script>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/admin-assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/admin-assets/css/atlantis.min.css">
+    <link rel="stylesheet" href="/admin-assets/css/demo.css">
+</head>
+<body>
+<div class="wrapper">
+
+    <!-- Header & Navbar -->
+    <th:block th:replace="~{admin/fragments/header :: header}"></th:block>
+    <th:block th:replace="~{admin/fragments/navbar :: navbar}"></th:block>
+
+    <div class="main-panel">
+        <div class="content">
+
+            <!-- Banner -->
+            <div class="panel-header bg-primary-gradient">
+                <div class="page-inner py-5">
+                    <div class="d-flex align-items-left align-items-md-center flex-column flex-md-row">
+                        <div>
+                            <h2 class="text-white pb-2 fw-bold">Bảng điều khiển</h2>
+                            <h5 class="text-white op-7 mb-2">Trang quản trị BOOK_SHOP</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cards & Charts -->
+            <div class="page-inner mt--5">
+
+                <div class="row mt--2">
+                    <!-- Tổng quan (vòng tròn) -->
+                    <div class="col-md-6">
+                        <div class="card full-height">
+                            <div class="card-body">
+                                <div class="card-title">Thống kê tổng quan</div>
+                                <div class="card-category">Thông tin nhanh trong 7 ngày gần đây</div>
+
+                                <!-- kpis: Map<String,Number> -> newUsers, orders7d, subscribers(=salesQty7d) -->
+                                <div class="d-flex flex-wrap justify-content-around pb-2 pt-4">
+                                    <div class="px-2 pb-2 pb-md-0 text-center">
+                                        <div id="circles-1"></div>
+                                        <h6 class="fw-bold mt-3 mb-0">Người dùng mới (7 ngày)</h6>
+                                    </div>
+                                    <div class="px-2 pb-2 pb-md-0 text-center">
+                                        <div id="circles-2"></div>
+                                        <h6 class="fw-bold mt-3 mb-0">Đơn hàng (7 ngày)</h6>
+                                    </div>
+                                    <div class="px-2 pb-2 pb-md-0 text-center">
+                                        <div id="circles-3"></div>
+                                        <h6 class="fw-bold mt-3 mb-0">SL bán (7 ngày)</h6>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Doanh thu -->
+                    <div class="col-md-6">
+                        <div class="card full-height">
+                            <div class="card-body">
+                                <div class="card-title">Doanh thu & Chi tiêu</div>
+                                <div class="row py-3">
+                                    <div class="col-md-4 d-flex flex-column justify-content-around">
+                                        <div>
+                                            <h6 class="fw-bold text-uppercase text-success op-8">Tổng doanh thu</h6>
+                                            <h3 class="fw-bold" th:text="${totalIncomeFormatted} ?: '0'">0</h3>
+                                        </div>
+                                        <div>
+                                            <h6 class="fw-bold text-uppercase text-danger op-8">Tổng chi</h6>
+                                            <h3 class="fw-bold" th:text="${totalSpendFormatted} ?: '0'">0</h3>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div id="chart-container">
+                                            <canvas id="totalIncomeChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thống kê người dùng + Doanh số ngày -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-head-row">
+                                    <div class="card-title">Thống kê người dùng</div>
+                                    <div class="card-tools">
+                                        <a href="javascript:void(0);" class="btn btn-info btn-border btn-round btn-sm mr-2">
+                                            <span class="btn-label"><i class="fa fa-pencil"></i></span>Xuất
+                                        </a>
+                                        <a href="javascript:void(0);" class="btn btn-info btn-border btn-round btn-sm">
+                                            <span class="btn-label"><i class="fa fa-print"></i></span>In
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="min-height: 375px">
+                                    <canvas id="statisticsChart"></canvas>
+                                </div>
+                                <div id="myChartLegend"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card card-primary">
+                            <div class="card-header">
+                                <div class="card-title">Doanh số theo ngày</div>
+                                <div class="card-category" th:text="${rangeLabel}?: '7 ngày gần nhất'">7 ngày gần nhất</div>
+                            </div>
+                            <div class="card-body pb-0">
+                                <div class="mb-4 mt-2">
+                                    <h1 th:text="${dailySalesHeadline} ?: '0'">0</h1>
+                                </div>
+                                <div class="pull-in">
+                                    <canvas id="dailySalesChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-body pb-0">
+                                <div class="h1 fw-bold float-right text-warning" th:text="${transactionsDelta} ?: '+0%'">+0%</div>
+                                <h2 class="mb-2" th:text="${transactionsCount} ?: 0">0</h2>
+                                <p class="text-muted">Giao dịch</p>
+                                <div class="pull-in sparkline-fix">
+                                    <div id="lineChart"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div><!-- /page-inner -->
+        </div><!-- /content -->
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="container-fluid">
+                <nav class="pull-left">
+                    <ul class="nav">
+                        <li class="nav-item"><a class="nav-link" href="javascript:void(0);">BOOK-SHOP</a></li>
+                        <li class="nav-item"><a class="nav-link" href="javascript:void(0);">Trợ giúp</a></li>
+                        <li class="nav-item"><a class="nav-link" href="javascript:void(0);">Giấy phép</a></li>
+                    </ul>
+                </nav>
+                <div class="copyright ml-auto">
+                    2025, làm với <i class="fa fa-heart heart text-danger"></i> bởi <a href="javascript:void(0);">BOOK-SHOP</a>
+                </div>
+            </div>
+        </footer>
+
+    </div><!-- /main-panel -->
+</div><!-- /wrapper -->
+
+<!-- Core JS -->
+<script src="/admin-assets/js/core/jquery.3.2.1.min.js"></script>
+<script src="/admin-assets/js/core/popper.min.js"></script>
+<script src="/admin-assets/js/core/bootstrap.min.js"></script>
+
+<!-- Plugins -->
+<script src="/admin-assets/js/plugin/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
+<script src="/admin-assets/js/plugin/jquery-ui-touch-punch/jquery.ui.touch-punch.min.js"></script>
+<script src="/admin-assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js"></script>
+<script src="/admin-assets/js/plugin/chart.js/chart.min.js"></script>
+<script src="/admin-assets/js/plugin/jquery.sparkline/jquery.sparkline.min.js"></script>
+<script src="/admin-assets/js/plugin/chart-circle/circles.min.js"></script>
+<script src="/admin-assets/js/plugin/datatables/datatables.min.js"></script>
+<script src="/admin-assets/js/plugin/bootstrap-notify/bootstrap-notify.min.js"></script>
+<script src="/admin-assets/js/plugin/jqvmap/jquery.vmap.min.js"></script>
+<script src="/admin-assets/js/plugin/jqvmap/maps/jquery.vmap.world.js"></script>
+<script src="/admin-assets/js/plugin/sweetalert/sweetalert.min.js"></script>
+<script src="/admin-assets/js/atlantis.min.js"></script>
+<script src="/admin-assets/js/setting-demo.js"></script>
+<!-- <script src="/admin-assets/js/demo.js"></script> -->
+
+<!-- Inject data -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var kpis = /*[[${kpis}]]*/ null;
+    var newUsers    = (kpis && kpis.newUsers    != null) ? kpis.newUsers    : 0;
+    var orders7d    = (kpis && kpis.orders7d    != null) ? kpis.orders7d    : 0;
+    var subscribers = (kpis && kpis.subscribers != null) ? kpis.subscribers : 0; // = SL bán (7 ngày)
+
+    var incomeLabels = /*[[${incomeLabels}]]*/ [];
+    var incomeValues = /*[[${incomeValues}]]*/ [];
+
+    var ordersLabels = /*[[${ordersLabels}]]*/ [];
+    var ordersValues = /*[[${ordersValues}]]*/ [];
+
+    var transactionsSmall = /*[[${transactionsSmall}]]*/ [0,0,0,0,0];
+
+    // Circles
+    Circles.create({ id:'circles-1', radius:45, value: Math.min(newUsers,100), maxValue:100, width:7, text: newUsers, colors:['#f1f1f1','#FF9E27'], duration:400, wrpClass:'circles-wrp', textClass:'circles-text', styleWrapper:true, styleText:true });
+    Circles.create({ id:'circles-2', radius:45, value: Math.min(orders7d,100), maxValue:100, width:7, text: orders7d, colors:['#f1f1f1','#2BB930'], duration:400, wrpClass:'circles-wrp', textClass:'circles-text', styleWrapper:true, styleText:true });
+    Circles.create({ id:'circles-3', radius:45, value: Math.min(subscribers,100), maxValue:100, width:7, text: subscribers, colors:['#f1f1f1','#F25961'], duration:400, wrpClass:'circles-wrp', textClass:'circles-text', styleWrapper:true, styleText:true });
+
+    // Income Bar
+    var ctxIncome = document.getElementById('totalIncomeChart').getContext('2d');
+    new Chart(ctxIncome, {
+        type: 'bar',
+        data: { labels: incomeLabels, datasets: [{ label: 'Doanh thu', backgroundColor: '#ff9e27', borderColor: 'rgb(23,125,255)', data: incomeValues }] },
+        options: {
+            responsive:true, maintainAspectRatio:false, legend:{display:false},
+            scales:{ yAxes:[{ticks:{beginAtZero:true}, gridLines:{drawBorder:false}}], xAxes:[{gridLines:{drawBorder:false,display:false}}] }
+        }
+    });
+
+    // Orders Line (Daily Sales)
+    var ctxDaily = document.getElementById('dailySalesChart').getContext('2d');
+    new Chart(ctxDaily, {
+        type: 'line',
+        data: { labels: ordersLabels, datasets: [{ label: 'Số đơn hàng', data: ordersValues, fill:true, backgroundColor:'rgba(40,120,255,.15)', borderColor:'#2878ff', borderWidth:2, pointRadius:2 }] },
+        options: { responsive:true, maintainAspectRatio:false, legend:{display:false}, scales:{ yAxes:[{ticks:{beginAtZero:true}}] } }
+    });
+
+    // Sparkline
+    $('#lineChart').sparkline(transactionsSmall, {
+        type:'line', height:'70', width:'100%', lineWidth:2, lineColor:'#ffa534', fillColor:'rgba(255,165,52,.14)'
+    });
+
+    // “Thống kê người dùng” – demo dùng cùng dữ liệu orders
+    var ctxUsers = document.getElementById('statisticsChart').getContext('2d');
+    new Chart(ctxUsers, {
+        type:'line',
+        data:{ labels: ordersLabels, datasets:[{label:'Người dùng hoạt động', data: ordersValues, fill:true, borderColor:'#31ce36', backgroundColor:'rgba(49,206,54,.15)'}] },
+        options:{ responsive:true, maintainAspectRatio:false, legend:{display:false} }
+    });
+    /*]]>*/
+</script>
+</body>
+</html>

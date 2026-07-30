@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security5">
+<head>
+    <meta charset="UTF-8">
+    <title>Chỉnh sửa quyền người dùng</title>
+    <meta content="width=device-width, initial-scale=1.0, shrink-to-fit=no" name="viewport"/>
+    <link rel="icon" href="/admin-assets/img/icon.ico" type="image/x-icon"/>
+
+    <!-- Vendors -->
+    <link rel="stylesheet" href="/admin-assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/admin-assets/css/atlantis.min.css">
+
+    <!-- Your separated CSS -->
+    <link rel="stylesheet" href="/admin-assets/css/admin-user.css">
+</head>
+<body>
+<div class="wrapper">
+
+    <th:block th:replace="~{admin/fragments/header :: header}"></th:block>
+    <th:block th:replace="~{admin/fragments/navbar :: navbar}"></th:block>
+
+    <div class="main-panel">
+        <div class="content">
+            <div class="page-inner">
+                <div class="page-header align-items-center">
+                    <h4 class="page-title mb-0">Chỉnh sửa quyền</h4>
+                    <ul class="breadcrumbs ml-3 mb-0">
+                        <li class="nav-home"><a th:href="@{/admin/home}"><i class="flaticon-home"></i></a></li>
+                        <li class="separator"><i class="flaticon-right-arrow"></i></li>
+                        <li class="nav-item"><a th:href="@{/admin/customers}">Quản lý người dùng</a></li>
+                        <li class="separator"><i class="flaticon-right-arrow"></i></li>
+                        <li class="nav-item"><a href="javascript:void(0);">Chỉnh sửa quyền</a></li>
+                    </ul>
+                </div>
+
+                <div th:if="${param.notfound}" class="alert alert-danger">Không tìm thấy người dùng cần chỉnh sửa.</div>
+
+                <div class="row" th:if="${target != null}">
+                    <!-- Info card -->
+                    <div class="col-lg-4 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <!-- avatar -->
+                                <img class="avatar-lg rounded-circle mb-3"
+                                     th:if="${target.avatar != null}" th:src="@{/loadImage(imageName=${target.avatar})}" alt="avatar"/>
+                                <img class="avatar-lg rounded-circle mb-3"
+                                     th:if="${target.avatar == null}" th:src="@{/images/user.png}" alt="avatar-default"/>
+                                <h5 class="mb-0" th:text="${target.name}">Tên người dùng</h5>
+                                <div class="soft" th:text="${target.email}">email@site.com</div>
+                                <div class="mt-2">
+                                    <span th:if="${target.status}" class="badge badge-success">Đang hoạt động</span>
+                                    <span th:if="${!target.status}" class="badge badge-secondary">Ngừng hoạt động</span>
+                                </div>
+                                <hr/>
+                                <div class="d-flex justify-content-between">
+                                    <span class="soft">Ngày đăng ký</span>
+                                    <span th:text="${#dates.format(target.registerDate, 'dd/MM/yyyy')}">01/01/2025</span>
+                                </div>
+                                <div class="mt-3 text-left">
+                                    <div class="soft mb-2">Roles hiện có</div>
+                                    <div>
+                    <span class="badge badge-soft mr-1 mb-1"
+                          th:each="r : ${target.roles}"
+                          th:text="${r.name}">ROLE</span>
+                                        <span th:if="${#lists.isEmpty(target.roles)}" class="soft">Chưa có role</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form card -->
+                    <div class="col-lg-8 mb-3">
+                        <div class="card">
+                            <div class="card-header d-flex align-items-center justify-content-between">
+                                <h5 class="mb-0">Cập nhật quyền & trạng thái</h5>
+                                <span class="soft">ID: <strong th:text="${target.userId}">1</strong></span>
+                            </div>
+                            <div class="card-body">
+                                <form th:action="@{'/admin/customers/edit/' + ${target.userId}}" method="post" class="needs-validation" novalidate>
+                                    <!-- CSRF (safe) -->
+                                    <th:block th:with="csrf=${#request.getAttribute('_csrf')}">
+                                        <input type="hidden" th:if="${csrf != null}" th:name="${csrf.parameterName}" th:value="${csrf.token}"/>
+                                    </th:block>
+
+                                    <!-- trạng thái -->
+                                    <div class="form-group">
+                                        <label class="mb-1">Trạng thái</label>
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="enabled" name="enabled" th:checked="${target.status}">
+                                            <label class="custom-control-label" for="enabled">Đang hoạt động</label>
+                                        </div>
+                                    </div>
+
+                                    <!-- tên, email -->
+                                    <div class="form-row">
+                                        <div class="form-group col-md-6">
+                                            <label>Họ và tên</label>
+                                            <input type="text" class="form-control" th:value="${target.name}" readonly>
+                                        </div>
+                                        <div class="form-group col-md-6">
+                                            <label>Email</label>
+                                            <input type="email" class="form-control" th:value="${target.email}" readonly>
+                                        </div>
+                                    </div>
+
+                                    <!-- ===== Role Picker ===== -->
+                                    <div class="form-group">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <div>
+                                                <label class="mb-0">Phân quyền</label>
+                                                <small class="soft ml-2">(<span id="roleCount">0</span> đã chọn)</small>
+                                            </div>
+                                            <div class="toolbar d-flex">
+                                                <div class="search">
+                          <span class="ico">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                          </span>
+                                                    <input id="roleSearch" type="text" class="form-control" placeholder="Lọc theo tên role (ADMIN, USER, STAFF)...">
+                                                </div>
+                                                <button id="btnSelectAll" type="button" class="btn btn-outline-primary btn-sm">Chọn tất cả</button>
+                                                <button id="btnClear" type="button" class="btn btn-outline-secondary btn-sm">Bỏ chọn</button>
+                                            </div>
+                                        </div>
+
+                                        <!-- khu đã chọn -->
+                                        <div class="chips mb-2" id="selectedChips">
+                                            <span class="soft">Chưa chọn role nào</span>
+                                        </div>
+
+                                        <!-- danh sách role -->
+                                        <div class="role-wrap" id="roleWrap">
+                                            <label class="pill"
+                                                   th:each="r : ${allRoles}"
+                                                   th:classappend="${selectedRoleIds.contains(r.id)} ? ' active' : ''"
+                                                   th:data-id="${r.id}">
+                                                <span class="dot"></span>
+                                                <span class="text" th:text="${r.name}">ROLE_NAME</span>
+                                                <span class="x">&times;</span>
+                                                <input type="checkbox" name="roleIds"
+                                                       th:value="${r.id}"
+                                                       th:checked="${selectedRoleIds.contains(r.id)}"/>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <!-- ===== /Role Picker ===== -->
+
+                                    <div class="d-flex">
+                                        <a th:href="@{/admin/customers}" class="btn btn-outline-secondary mr-2">Hủy</a>
+                                        <button type="submit" class="btn btn-primary">Lưu</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /row -->
+
+                <div class="alert alert-danger" th:if="${target == null}">
+                    Không tìm thấy người dùng để chỉnh sửa.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vendor JS -->
+<script src="/admin-assets/js/core/jquery.3.2.1.min.js"></script>
+<script src="/admin-assets/js/core/popper.min.js"></script>
+<script src="/admin-assets/js/core/bootstrap.min.js"></script>
+
+<!-- Your separated JS -->
+<script src="/admin-assets/js/admin-user.js"></script>
+</body>
+</html>

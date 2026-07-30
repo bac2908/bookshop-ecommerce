@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+    <meta name="author" content="mironcoder" />
+    <meta name="email" content="mironcoder@gmail.com" />
+    <meta name="profile" content="https://themeforest.net/user/mironcoder" />
+    <meta name="template" content="book" />
+    <meta name="title" content="book - Ecommerce Book Store HTML Template" />
+    <meta name="keywords" content="organic, food, shop, ecommerce, store, html, bootstrap, template, agriculture, vegetables, products, farm, grocery, natural, online"/>
+    <title>Web bán sách giá rẻ</title>
+
+    <link rel="icon" href="/storefront/images/favicon.png" />
+    <link rel="stylesheet" href="/storefront/fonts/flaticon/flaticon.css" />
+    <link rel="stylesheet" href="/storefront/fonts/icofont/icofont.min.css" />
+    <link rel="stylesheet" href="/storefront/fonts/fontawesome/fontawesome.min.css" />
+    <link rel="stylesheet" href="/storefront/vendor/venobox/venobox.min.css" />
+    <link rel="stylesheet" href="/storefront/vendor/slickslider/slick.min.css" />
+    <link rel="stylesheet" href="/storefront/vendor/niceselect/nice-select.min.css" />
+    <link rel="stylesheet" href="/storefront/vendor/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="/storefront/css/main.css" />
+    <link rel="stylesheet" href="/storefront/css/user-auth.css" />
+
+    <style>
+        .user-form-card { border-radius: 18px; box-shadow: 0 12px 30px rgba(0,0,0,.08); }
+        .user-form-title h2 { font-weight: 800; }
+        .form-group .text-danger { display:block; margin-top:6px; }
+        .user-form-divider p { font-weight:600; color:#6c757d; }
+        .user-form .form-control { border-radius: 10px; }
+        .user-form .form-button button { border-radius: 12px; padding:.75rem 1.25rem; }
+    </style>
+</head>
+<body>
+<section class="user-form-part">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-sm-10 col-md-12 col-lg-12 col-xl-10">
+                <div class="user-form-logo">
+                    <a th:href="@{/}"><img src="/storefront/images/logo.png" alt="logo" /></a>
+                </div>
+
+                <div class="user-form-card">
+                    <div class="user-form-title">
+                        <h2>Đăng Ký Ngay!</h2>
+                        <p>Thiết Lập Một Tài Khoản Mới</p>
+                        <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+                        <div class="alert alert-success" th:if="${message}" th:text="${message}"></div>
+                    </div>
+
+                    <div class="user-form-group">
+                        <ul class="user-form-social">
+                            <li>
+                                <a class="facebook" href="javascript:void(0);">
+                                    <i class="fab fa-facebook-f"></i>Join with facebook
+                                </a>
+                            </li>
+                            <li>
+                                <a class="google" href="javascript:void(0);">
+                                    <i class="fab fa-google"></i>Join with google
+                                </a>
+                            </li>
+                        </ul>
+                        <div class="user-form-divider"><p>hoặc</p></div>
+
+                        <!-- Form DTO -->
+                        <form th:action="@{/register}" method="post" th:object="${form}" class="user-form" novalidate>
+
+                            <!-- Email -->
+                            <div class="form-group">
+                                <input
+                                        type="email"
+                                        th:field="*{email}"
+                                        id="email"
+                                        class="form-control"
+                                        placeholder="Địa chỉ Email"
+                                        autocomplete="off"
+                                        required
+                                        pattern="^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"
+                                        title="Email không hợp lệ. Ví dụ: ten@gmail.com"
+                                />
+                                <small class="text-danger" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></small>
+                            </div>
+
+                            <!-- Username -->
+                            <div class="form-group">
+                                <input
+                                        type="text"
+                                        th:field="*{username}"
+                                        id="username"
+                                        class="form-control"
+                                        placeholder="Username (chỉ chữ & số, 4–50 ký tự)"
+                                        autocomplete="username"
+                                        required
+                                        minlength="4"
+                                        maxlength="50"
+                                        pattern="^[A-Za-z0-9]{4,50}$"
+                                        title="Username 4–50 ký tự, chỉ chữ và số, không khoảng trắng/ký tự đặc biệt"
+                                />
+                                <small class="text-danger" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></small>
+                            </div>
+
+                            <!-- Họ tên -->
+                            <div class="form-group">
+                                <input
+                                        type="text"
+                                        th:field="*{name}"
+                                        id="name"
+                                        class="form-control"
+                                        placeholder="Họ và tên"
+                                        autocomplete="off"
+                                        required
+                                        minlength="2"
+                                        maxlength="50"
+                                        pattern="^[A-Za-zÀ-ỹĐđ ]{2,50}$"
+                                        title="Tên chỉ chứa chữ cái (có dấu) và khoảng trắng, 2-50 ký tự"
+                                />
+                                <small class="text-danger" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></small>
+                            </div>
+
+                            <!-- SĐT -->
+                            <div class="form-group">
+                                <input
+                                        type="tel"
+                                        th:field="*{phone}"
+                                        id="phone"
+                                        class="form-control"
+                                        placeholder="Số điện thoại (VD: 090xxxxxxx hoặc +843xxxxxxx)"
+                                        autocomplete="tel"
+                                        required
+                                        pattern="^(0|\+84)(3|5|7|8|9)\d{8}$"
+                                        title="Nhập số di động Việt Nam: 0(3|5|7|8|9) + 8 số, hoặc +84(3|5|7|8|9) + 8 số"
+                                />
+                                <small class="text-danger" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></small>
+                            </div>
+
+                            <!-- Mật khẩu -->
+                            <div class="form-group">
+                                <input
+                                        type="password"
+                                        th:field="*{password}"
+                                        class="form-control"
+                                        id="myPass"
+                                        name="password"
+                                        placeholder="Mật khẩu"
+                                        required
+                                        minlength="12"
+                                        maxlength="128"
+                                        autocomplete="new-password"
+                                        pattern="(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9])\S{12,128}"
+                                        title="Tối thiểu 12 ký tự, phải có chữ cái, số và ký tự đặc biệt, không có khoảng trắng"
+                                />
+                                <small class="text-danger" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></small>
+                            </div>
+
+                            <!-- Nhập lại mật khẩu -->
+                            <div class="form-group">
+                                <input
+                                        type="password"
+                                        th:field="*{confirmPassword}"
+                                        class="form-control"
+                                        id="confirmPass"
+                                        name="confirmPassword"
+                                        placeholder="Nhập lại mật khẩu"
+                                        required
+                                        minlength="12"
+                                        maxlength="128"
+                                        autocomplete="new-password"
+                                />
+                                <small id="confirmHelp" class="text-danger" style="display:none;">Mật khẩu không khớp</small>
+                                <small class="text-danger" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></small>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="check" onclick="togglePass()"/>
+                                <label class="form-check-label" for="check">Hiển thị mật khẩu</label>
+                            </div>
+
+                            <div class="form-button">
+                                <button type="submit">Đăng Ký</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="user-form-remind">
+                    <p>Bạn đã có tài khoản?<a th:href="@{/login}">Đăng nhập tại đây</a></p>
+                </div>
+                <div class="user-form-footer">
+                    <p>BOOK-SHOP | &COPY; Developer by <a href="javascript:void(0);">CT07</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    function togglePass() {
+        var p1 = document.getElementById("myPass");
+        var p2 = document.getElementById("confirmPass");
+        if (p1) p1.type = (p1.type === "password") ? "text" : "password";
+        if (p2) p2.type = (p2.type === "password") ? "text" : "password";
+    }
+
+    (function(){
+        var p = document.getElementById("myPass");
+        var c = document.getElementById("confirmPass");
+        var hint = document.getElementById("confirmHelp");
+        if(!p || !c) return;
+        function check(){
+            if (c.value && p.value !== c.value) {
+                c.setCustomValidity("Mismatch");
+                if (hint) hint.style.display = "inline";
+            } else {
+                c.setCustomValidity("");
+                if (hint) hint.style.display = "none";
+            }
+        }
+        p.addEventListener("input", check);
+        c.addEventListener("input", check);
+    })();
+</script>
+
+<!-- JS: đúng thứ tự & đủ dấu mở thẻ -->
+<script src="/storefront/vendor/bootstrap/jquery-1.12.4.min.js"></script>
+<script src="/storefront/vendor/bootstrap/popper.min.js"></script>
+<script src="/storefront/vendor/bootstrap/bootstrap.min.js"></script>
+<script src="/storefront/vendor/countdown/countdown.min.js"></script>
+<script src="/storefront/vendor/niceselect/nice-select.min.js"></script>
+<script src="/storefront/vendor/slickslider/slick.min.js"></script>
+<script src="/storefront/vendor/venobox/venobox.min.js"></script>
+<script src="/storefront/js/nice-select.js"></script>
+<script src="/storefront/js/countdown.js"></script>
+<script src="/storefront/js/accordion.js"></script>
+<script src="/storefront/js/venobox.js"></script>
+<script src="/storefront/js/slick.js"></script>
+<script src="/storefront/js/main.js"></script>
+</body>
+</html>

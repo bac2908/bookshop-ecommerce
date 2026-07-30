@@ -1,5 +1,7 @@
  HELP.md
 target/
+bin/
+output.txt
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
@@ -37,3 +39,6 @@ build/
 .env.*
 !.env.example
 src/main/resources/application-local.properties
+
+# Runtime data is mounted into the application container and is not source code.
+upload/

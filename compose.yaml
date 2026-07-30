@@ -3,7 +3,6 @@ name: tmdt-bookshop
 services:
   mysql:
     image: mysql:8.4.10
-    container_name: bookshop-mysql
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-bookshop}
@@ -26,6 +25,36 @@ services:
       start_period: 20s
     volumes:
       - bookshop_mysql_data:/var/lib/mysql
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tmdt-bookshop-app:local
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-bookshop}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
+      DB_USERNAME: ${MYSQL_USER:-bookshop}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-bookshop_dev}
+      UPLOAD_PATH: /app/upload/images
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-465}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      PAYPAL_MODE: ${PAYPAL_MODE:-sandbox}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:-}
+      PAYPAL_REFUND_ENABLED: ${PAYPAL_REFUND_ENABLED:-false}
+      APP_SCHEDULING_ENABLED: ${APP_SCHEDULING_ENABLED:-true}
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      - ./upload:/app/upload
 
 volumes:
   bookshop_mysql_data:

@@ -10,9 +10,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.context.ActiveProfiles;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -45,6 +48,28 @@ class GreenyShopApplicationTests {
 	void homePageIsPublicAndRenders() throws Exception {
 		mockMvc.perform(get("/"))
 				.andExpect(status().isOk());
+	}
+
+	@Test
+	void invalidImagePathReturnsSafeFallback() throws Exception {
+		mockMvc.perform(get("/loadImage").param("imageName", "../secret.txt"))
+				.andExpect(status().isOk())
+				.andExpect(content().contentType("image/gif"))
+				.andExpect(result -> assertTrue(
+						result.getResponse().getContentAsByteArray().length > 0));
+	}
+
+	@Test
+	@WithMockUser(username = "admin-export-test", roles = "ADMIN")
+	void adminExcelExportUsesXlsxMediaType() throws Exception {
+		mockMvc.perform(get("/admin/export"))
+				.andExpect(status().isOk())
+				.andExpect(content().contentType(
+						"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+				.andExpect(header().string(
+						"Content-Disposition", "attachment; filename=orders.xlsx"))
+				.andExpect(result -> assertTrue(
+						result.getResponse().getContentAsByteArray().length > 0));
 	}
 
 	@Test

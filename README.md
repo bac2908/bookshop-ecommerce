@@ -1,77 +1,89 @@
 # TMDT Bookshop
 
 Ứng dụng bán sách dùng Java 17, Spring Boot 3.5.16, Thymeleaf, Spring Security,
-Spring Data JPA, MySQL và Flyway.
+Spring Data JPA, MySQL 8.4 và Flyway.
 
-## Toolchain cố định
+## Chạy toàn bộ dự án bằng Docker
 
-- JDK: 17
-- Spring Boot: 3.5.16
-- Maven Wrapper: 3.3.4
-- Maven: 3.9.11
-- Lombok: 1.18.46
-- Maven Compiler Plugin: 3.15.0
-
-Mã nguồn đã chuyển sang Jakarta EE (`jakarta.persistence`, `jakarta.servlet`,
-`jakarta.validation`, `jakarta.mail`) và Spring Security dùng cấu hình
-`SecurityFilterChain`.
-
-Build sẽ dừng ngay nếu chạy bằng JDK khác Java 17. Wrapper có checksum SHA-256
-cho cả Maven distribution và wrapper JAR.
+Yêu cầu duy nhất: Docker Desktop đang chạy.
 
 ```powershell
-.\mvnw.cmd -version
+docker compose up -d --build
+```
+
+Sau khi hai container ở trạng thái chạy, mở:
+
+- Website: http://localhost:8080
+- MySQL từ máy host: `localhost:3308`
+
+Kiểm tra trạng thái và log:
+
+```powershell
+docker compose ps
+docker compose logs -f app
+```
+
+Dừng ứng dụng nhưng giữ nguyên dữ liệu:
+
+```powershell
+docker compose down
+```
+
+Docker Compose gồm:
+
+- `bookshop-app`: Spring Boot chạy bằng JRE 17.
+- `bookshop-mysql`: MySQL 8.4.
+- `bookshop_mysql_data`: volume lưu dữ liệu MySQL qua các lần restart.
+- `./upload`: thư mục ảnh runtime được mount vào `/app/upload`.
+
+Flyway tự tạo và nâng cấp schema khi container ứng dụng khởi động. Không import
+SQL thủ công và không sửa migration đã được áp dụng.
+
+## Cấu hình
+
+Giá trị mặc định trong `compose.yaml` chỉ dành cho development. Khi cần cấu hình
+mail, PayPal, cổng hoặc mật khẩu MySQL:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Sau đó chỉnh `.env` và chạy lại:
+
+```powershell
+docker compose up -d --build
+```
+
+Không commit `.env` hoặc secret thật vào Git.
+
+## Các lệnh hữu ích
+
+Build và chạy test trực tiếp trên máy yêu cầu JDK 17:
+
+```powershell
 .\mvnw.cmd clean package
 ```
 
-## Chạy với Docker MySQL
-
-MySQL container dùng cổng `3308` để không xung đột AMPPS hoặc container MySQL khác.
+Build lại riêng ứng dụng:
 
 ```powershell
-docker compose up -d
-docker compose ps
-.\run-local.ps1 -Database Docker
+docker compose build app
+docker compose up -d app
 ```
 
-Flyway tự chạy `V1__baseline_schema.sql` khi database Docker còn trống.
-
-## Chạy với AMPPS
-
-Mở AMPPS, bật MySQL và chạy:
+Xóa toàn bộ dữ liệu MySQL để khởi tạo mới hoàn toàn:
 
 ```powershell
-.\run-local.ps1
+docker compose down -v
+docker compose up -d --build
 ```
 
-Script đọc mật khẩu AMPPS vào biến môi trường, kích hoạt profile `dev` và không
-ghi mật khẩu vào source hoặc log. Với database AMPPS cũ chưa có lịch sử Flyway,
-profile `dev` baseline schema hiện tại tại version 1 rồi mới chạy migration mới.
+Lưu ý: `docker compose down -v` xóa vĩnh viễn database Docker hiện tại.
 
-## Profiles
+## Kiến trúc
 
-- `dev`: MySQL local, Flyway bật, cho phép baseline database legacy.
-- `test`: H2 trong bộ nhớ, Flyway tạo schema từ đầu, scheduler tắt.
-- `prod`: bắt buộc `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`; không tự baseline.
+Backend được chia thành `presentation`, `application`, `domain` và
+`infrastructure`. Frontend tách riêng `storefront`, `admin` và `email`.
 
-Ví dụ production:
-
-```powershell
-$env:SPRING_PROFILES_ACTIVE='prod'
-$env:DB_URL='jdbc:mysql://db-host:3306/bookshop'
-$env:DB_USERNAME='bookshop_app'
-$env:DB_PASSWORD='use-a-secret-manager'
-java -jar target\CT07-1.0.jar
-```
-
-Không dùng giá trị development trong production. Mail và PayPal cần các biến
-`MAIL_USERNAME`, `MAIL_PASSWORD`, `PAYPAL_CLIENT_ID` và
-`PAYPAL_CLIENT_SECRET`.
-
-## Quy tắc Flyway
-
-- Không sửa migration đã được dùng chung.
-- Mỗi thay đổi schema tiếp theo tạo file mới như
-  `V2__add_product_slug.sql`.
-- Production legacy phải được kiểm tra và baseline có chủ đích trước lần deploy
-  Flyway đầu tiên.
+Xem luồng xử lý, quy tắc dependency và cách tìm lỗi tại
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).

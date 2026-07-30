@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta charset="UTF-8"/>
+    <title>BOOK_SHOP - Trang quản trị</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no"/>
+    <link rel="icon" th:href="@{/admin-assets/img/icon.ico}" type="image/x-icon"/>
+
+    <!-- Vendor CSS -->
+    <link rel="stylesheet" th:href="@{/admin-assets/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" th:href="@{/admin-assets/css/atlantis.min.css}"/>
+
+    <!-- Fonts & Icons (Atlantis) -->
+    <script th:src="@{/admin-assets/js/plugin/webfont/webfont.min.js}"></script>
+    <script>
+        if (window.WebFont) {
+            WebFont.load({
+                google: { families: ["Lato:300,400,700,900"] },
+                custom: {
+                    families: ["Flaticon","Font Awesome 5 Solid","Font Awesome 5 Regular","Font Awesome 5 Brands","simple-line-icons"],
+                    urls: ["/admin-assets/css/fonts.min.css"]
+                },
+                active: function(){ try { sessionStorage.fonts = true; } catch(e){} }
+            });
+        }
+    </script>
+
+    <!-- Page CSS (đặt CUỐI để override) -->
+    <link rel="stylesheet" th:href="@{/css/admin-orders.css(v=${T(java.lang.System).currentTimeMillis()})}"/>
+</head>
+
+<body class="orders-page">
+<div class="wrapper">
+    <!-- Header & Navbar fragments -->
+    <th:block th:replace="~{admin/fragments/header :: header}"></th:block>
+    <th:block th:replace="~{admin/fragments/navbar :: navbar}"></th:block>
+
+    <div class="main-panel">
+        <div class="content">
+            <div class="page-inner">
+
+                <div class="orders__page-header">
+                    <h4 class="page-title m-0">Quản lý đơn hàng</h4>
+                    <a class="orders__export" th:href="@{/admin/export}">Xuất file Excel</a>
+                </div>
+
+                <div class="col-12">
+                    <div class="card orders__card">
+                        <div class="card-body">
+
+                            <!-- FILTERS -->
+                            <div class="orders__filters">
+                                <!-- Trạng thái -->
+                                <details class="orders__dropdown">
+                                    <summary class="orders__chip orders__chip--primary">
+                    <span class="orders__chip-label">
+                      Trạng thái:
+                      <b th:text="${f_status==null} ? 'Tất cả' :
+                                   (${f_status==0} ? '0 - Chờ xác nhận' :
+                                   (${f_status==1} ? '1 - Đang giao' :
+                                   (${f_status==2} ? '2 - Đã thanh toán' :
+                                   (${f_status==3} ? '3 - Đã hủy' : '4 - Đã hoàn tiền'))))">Tất cả</b>
+                    </span>
+                                    </summary>
+                                    <div class="orders__dropdown-panel">
+                                        <a th:href="@{/admin/orders(q=${f_q},from=${f_from},to=${f_to},payment=${f_payment})}"
+                                           th:classappend="${f_status==null}? ' is-active'">Tất cả</a>
+                                        <a th:href="@{/admin/orders(status=0,q=${f_q},from=${f_from},to=${f_to},payment=${f_payment})}"
+                                           th:classappend="${f_status==0}? ' is-active'">0 - Chờ xác nhận</a>
+                                        <a th:href="@{/admin/orders(status=1,q=${f_q},from=${f_from},to=${f_to},payment=${f_payment})}"
+                                           th:classappend="${f_status==1}? ' is-active'">1 - Đang giao</a>
+                                        <a th:href="@{/admin/orders(status=2,q=${f_q},from=${f_from},to=${f_to},payment=${f_payment})}"
+                                           th:classappend="${f_status==2}? ' is-active'">2 - Đã thanh toán</a>
+                                        <a th:href="@{/admin/orders(status=3,q=${f_q},from=${f_from},to=${f_to},payment=${f_payment})}"
+                                           th:classappend="${f_status==3}? ' is-active'">3 - Đã hủy</a>
+                                        <a th:href="@{/admin/orders(status=4,q=${f_q},from=${f_from},to=${f_to},payment=${f_payment})}"
+                                           th:classappend="${f_status==4}? ' is-active'">4 - Đã hoàn tiền</a>
+                                    </div>
+                                </details>
+
+                                <!-- Thanh toán -->
+                                <div class="orders__chips">
+                                    <a class="orders__chip" th:classappend="${f_payment == null or f_payment == ''}? ' orders__chip--active'"
+                                       th:href="@{/admin/orders(status=${f_status},q=${f_q},from=${f_from},to=${f_to})}">Tất cả</a>
+                                    <a class="orders__chip" th:classappend="${f_payment == 'PAYPAL'}? ' orders__chip--active'"
+                                       th:href="@{/admin/orders(status=${f_status},q=${f_q},from=${f_from},to=${f_to},payment='PAYPAL')}">PayPal</a>
+                                    <a class="orders__chip" th:classappend="${f_payment == 'COD'}? ' orders__chip--active'"
+                                       th:href="@{/admin/orders(status=${f_status},q=${f_q},from=${f_from},to=${f_to},payment='COD')}">COD</a>
+                                </div>
+
+                                <!-- Ô ngày & từ khóa -->
+                                <form class="orders__toolbar" th:action="@{/admin/orders}" method="get">
+                                    <input type="hidden" name="status" th:value="${f_status}"/>
+                                    <input type="hidden" name="payment" th:value="${f_payment}"/>
+
+                                    <div class="orders__field-group">
+                                        <label class="orders__label">Từ</label>
+                                        <input type="date" class="form-control orders__field" name="from" th:value="${f_from}"/>
+                                    </div>
+                                    <div class="orders__field-group">
+                                        <label class="orders__label">Đến</label>
+                                        <input type="date" class="form-control orders__field" name="to" th:value="${f_to}"/>
+                                    </div>
+                                    <div class="orders__field-group orders__field-group--grow">
+                                        <input type="search" class="form-control orders__field" name="q" th:value="${f_q}"
+                                               placeholder="Tên / email / SĐT / địa chỉ (nhấn Enter để tìm)"/>
+                                    </div>
+
+                                    <a class="btn orders__btn-reset" th:href="@{/admin/orders}">Reset</a>
+                                </form>
+
+                                <div class="orders__tip">
+                                    Tip: chọn trạng thái ở dropdown; với ô ngày & từ khóa, nhấn <b>Enter</b>.
+                                </div>
+                            </div>
+
+                            <!-- Bảng -->
+                            <div class="table-responsive mt-2">
+                                <table class="table table-hover orders__table">
+                                    <thead>
+                                    <tr>
+                                        <th>Mã đơn hàng</th>
+                                        <th>Tên khách hàng</th>
+                                        <th>Số ĐT</th>
+                                        <th>Ngày đặt hàng</th>
+                                        <th>Địa chỉ</th>
+                                        <th class="text-right">Tổng tiền</th>
+                                        <th>Chi tiết</th>
+                                        <th style="width:12%">Hành động</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr th:each="item : ${orderDetails}">
+                                        <td>[[${item.orderId}]]</td>
+                                        <td>[[${item.user.name}]]</td>
+                                        <td>[[${item.phone}]]</td>
+                                        <td><span class="orders__date">[[${#dates.format(item.orderDate, 'yyyy-MM-dd HH:mm')}]]</span></td>
+                                        <td>[[${item.address}]]</td>
+                                        <td class="text-right" th:text="${#numbers.formatDecimal(item.amount,1,'DEFAULT',0,'DEFAULT')} + ' đ'"></td>
+                                        <td><a class="orders__link" th:href="@{'/admin/order/detail/' + ${item.orderId}}">Chi tiết</a></td>
+                                        <td class="text-center">
+                                            <div th:if="${item.status == 0}">
+                                                <form th:action="@{'/admin/order/confirm/' + ${item.orderId}}" method="post">
+                                                    <button type="submit" class="orders__action--primary inline-action-button">Xác nhận</button>
+                                                </form>
+                                                <form class="mt-1" th:action="@{'/admin/order/cancel/' + ${item.orderId}}" method="post">
+                                                    <button type="submit" class="orders__action--danger inline-action-button">Hủy đơn</button>
+                                                </form>
+                                            </div>
+                                            <div th:if="${item.status == 1}">
+                                                <form th:action="@{'/admin/order/delivered/' + ${item.orderId}}" method="post">
+                                                    <button type="submit" class="orders__action--warning inline-action-button">Xác nhận đã giao</button>
+                                                </form>
+                                            </div>
+                                            <div th:if="${item.status == 2}">
+                                                <div class="orders__badge--success mb-1">Đã thanh toán</div>
+                                                <a th:if="${!#strings.isEmpty(item.paypalCaptureId)}"
+                                                   th:href="@{'/admin/paypal/refund/' + ${item.orderId}}" class="orders__action--danger">Hoàn tiền</a>
+                                                <small th:if="${#strings.isEmpty(item.paypalCaptureId)}" class="orders__muted d-block">
+                                                    (Không thanh toán PayPal nên không thể hoàn tiền PayPal)
+                                                </small>
+                                            </div>
+                                            <div th:if="${item.status == 3}" class="orders__badge--danger">Đã huỷ</div>
+                                            <div th:if="${item.status == 4}" class="orders__badge--muted">Đã hoàn tiền</div>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                                <div class="orders__muted">Mặc định sắp xếp: mới nhất → cũ nhất (server-side).</div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="container-fluid">
+                <div class="copyright ml-auto">
+                    2025, made with <i class="fa fa-heart heart text-danger"></i> by <a href="#">BOOK-SHOP</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<script th:src="@{/admin-assets/js/core/jquery.3.2.1.min.js}"></script>
+<script th:src="@{/admin-assets/js/core/popper.min.js}"></script>
+<script th:src="@{/admin-assets/js/core/bootstrap.min.js}"></script>
+<script th:src="@{/admin-assets/js/plugin/jquery-ui-1.12.1.custom/jquery-ui.min.js}"></script>
+<script th:src="@{/admin-assets/js/plugin/jquery-ui-touch-punch/jquery.ui.touch-punch.min.js}"></script>
+<script th:src="@{/admin-assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js}"></script>
+<script th:src="@{/admin-assets/js/atlantis.min.js}"></script>
+<!-- (tuỳ dự án) <script th:src="@{/admin-assets/js/setting-demo2.js}"></script> -->
+</body>
+</html>

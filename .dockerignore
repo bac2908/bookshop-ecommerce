@@ -1,0 +1,13 @@
+.git
+.gitignore
+.idea
+.agents
+bin
+target
+upload
+output.txt
+database.sql
+*.log
+.env
+.env.*
+!.env.example

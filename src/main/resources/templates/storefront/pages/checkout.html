@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<meta http-equiv="content-type" content="text/html;charset=utf-8"/>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+    <meta name="author" content="mironcoder" />
+    <meta name="email" content="mironcoder@gmail.com" />
+    <meta name="profile" content="https://themeforest.net/user/mironcoder" />
+    <meta name="template" content="book" />
+    <meta name="title" content="book - Ecommerce Book Store HTML Template" />
+    <meta name="keywords" content="organic, food, shop, ecommerce, store, html, bootstrap, template, agriculture, vegetables, products, farm, grocery, natural, online"/>
+    <title>Web bán sách giá rẻ</title>
+
+    <link rel="icon" th:href="@{/storefront/images/favicon.png}" />
+    <link rel="stylesheet" th:href="@{/storefront/fonts/flaticon/flaticon.css}" />
+    <link rel="stylesheet" th:href="@{/storefront/fonts/icofont/icofont.min.css}" />
+    <link rel="stylesheet" th:href="@{/storefront/fonts/fontawesome/fontawesome.min.css}" />
+    <link rel="stylesheet" th:href="@{/storefront/vendor/venobox/venobox.min.css}" />
+    <link rel="stylesheet" th:href="@{/storefront/vendor/slickslider/slick.min.css}" />
+    <link rel="stylesheet" th:href="@{/storefront/vendor/niceselect/nice-select.min.css}" />
+    <link rel="stylesheet" th:href="@{/storefront/vendor/bootstrap/bootstrap.min.css}" />
+    <link rel="stylesheet" th:href="@{/storefront/css/main.css}" />
+    <link rel="stylesheet" th:href="@{/storefront/css/checkout.css}" />
+
+    <style>
+        a[aria-disabled="true"] { pointer-events: none; opacity: .5; }
+        .qty-row .btn{min-width:32px}
+        .table-list img{max-width:72px;border:1px solid #eee;border-radius:8px;background:#fff}
+        /* form đẹp xíu cho đồng bộ */
+        .user-form .form-control { border-radius: 10px; }
+        .user-form .form-button .btn { border-radius: 12px; padding:.75rem 1.25rem; }
+        .form-group .text-danger { display:block; margin-top:6px; }
+        .account-title h4 { font-weight: 800; }
+    </style>
+</head>
+<body>
+
+<header th:replace="~{storefront/fragments/header :: header}"></header>
+
+<section class="inner-section single-banner"
+         th:style="|background: url(@{/storefront/images/single-banner.jpg}) no-repeat center|">
+    <div class="container">
+        <h2>Thông tin đơn hàng</h2>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/}">Trang chủ</a></li>
+        </ol>
+    </div>
+</section>
+
+<section class="inner-section checkout-part">
+    <div class="container">
+        <div class="row">
+
+            <div class="col-lg-12">
+                <div class="account-card">
+                    <div class="account-title"><h4>Đơn Đặt Hàng Của Bạn</h4></div>
+
+                    <!-- Giỏ rỗng -->
+                    <div class="text-center" th:unless="${totalCartQtySum!=0}">
+                        <h3 style="color: #119744" class="mt-5">Hiện tại bạn chưa có sản phẩm nào trong giỏ hàng!</h3>
+                        <h4 style="color: #119744">Hãy mua sắm đi nào!</h4>
+                        <a th:href="@{/products}" style="text-decoration: underline;">Click tại đây!</a>
+                    </div>
+
+                    <div class="account-content">
+                        <div class="table-scroll">
+                            <table class="table-list" th:if="${totalCartQtySum!=0}">
+                                <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Sản phẩm</th>
+                                    <th scope="col">Tên sản phẩm</th>
+                                    <th scope="col">Đơn giá</th>
+                                    <th scope="col">Thể loại</th>
+                                    <th scope="col">Số lượng</th>
+                                    <th scope="col">action</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="item,State : ${cartItems}">
+                                    <td class="table-serial"><h6>[[${State.index + 1}]]</h6></td>
+
+                                    <td class="table-image">
+                                        <img th:src="@{'/loadImage?imageName='+${item.product.productImage}}" alt="product" />
+                                    </td>
+
+                                    <td class="table-name">
+                                        <h6>
+                                            <a th:href="@{/productDetail(id=${item.product.productId})}"
+                                               th:text="${item.product.productName}">Tên sản phẩm</a>
+                                        </h6>
+                                    </td>
+
+                                    <td class="table-price">
+                                        <h6>
+                                            [[${#numbers.formatDecimal(item.product.price - (item.product.price * item.product.discount/100), 1, 'DEFAULT', 0, 'DEFAULT')} +' đ']]
+                                            <small>/kg</small>
+                                        </h6>
+                                    </td>
+
+                                    <td class="table-brand">
+                                        <h6>[[${item.product.category.categoryName}]]</h6>
+                                    </td>
+
+                                    <td class="table-quantity">
+                                        <div class="qty-row" style="display:flex; gap:8px; align-items:center;"
+                                             th:with="
+                                                q=${item.quantity},
+                                                rawMax=${item.product.quantity},
+                                                max=${rawMax == null ? 999999 : rawMax}
+                                             ">
+                                            <form class="inline-action-form"
+                                                  th:action="@{/cart/dec(productId=${item.product.productId}, redirect='checkout')}"
+                                                  method="post">
+                                                <button class="btn btn-sm btn-outline-secondary"
+                                                        type="submit" th:disabled="${q <= 1}"
+                                                        title="Giảm">−</button>
+                                            </form>
+
+                                            <span><strong>[[${q}]]</strong></span>
+
+                                            <form class="inline-action-form"
+                                                  th:action="@{/cart/inc(productId=${item.product.productId}, redirect='checkout')}"
+                                                  method="post">
+                                                <button class="btn btn-sm btn-outline-secondary"
+                                                        type="submit" th:disabled="${q >= max}"
+                                                        title="Tăng">+</button>
+                                            </form>
+                                        </div>
+
+                                        <div class="text-muted" style="font-size:12px;"
+                                             th:with="left=${(item.product.quantity == null) ? null : (item.product.quantity - item.quantity)}">
+                                            <span th:if="${left == null}">Kho: cập nhật</span>
+                                            <span th:if="${left != null}">Còn: [[${left < 0 ? 0 : left}]]</span>
+                                        </div>
+                                    </td>
+
+                                    <td class="table-action">
+                                        <a class="view"
+                                           th:href="@{/productDetail(id=${item.product.productId})}"
+                                           title="Chi tiết sản phẩm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+
+                                        <a class="trash" href="javascript:void(0);" title="Xóa sản phẩm"
+                                           th:data-id="${item.product.productId}"
+                                           th:data-name="${item.product.productName}"
+                                           onclick="showConfigModalDialog(this.getAttribute('data-id'), this.getAttribute('data-name'))">
+                                            <i class="icofont-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <th:block th:if="${totalCartQtySum!=0}">
+                            <div class="chekout-coupon">
+                                <h4>Tổng tiền thanh toán</h4>
+                            </div>
+                            <div class="checkout-charge">
+                                <ul>
+                                    <li>
+                                        <span>Tổng tiền thanh toán<small>(Incl. VAT)</small></span>
+                                        <span>[[${#numbers.formatDecimal(totalPrice, 1, 'DEFAULT', 0, 'DEFAULT')}+ ' đ']]</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </th:block>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form đặt hàng -->
+            <div class="col-lg-12" th:if="${totalCartQtySum!=0}">
+                <div class="account-card mb-0">
+                    <div class="account-title">
+                        <h4>Thông tin nhận hàng</h4>
+                    </div>
+                    <div class="account-content">
+                        <div class="row">
+                            <!-- BIND vào DTO CheckoutAddressDTO -->
+                            <form class="user-form" th:action="@{/checkout}" th:object="${checkout}" method="post" novalidate>
+
+                                <!-- Email readonly -->
+                                <div class="form-group">
+                                    <input type="email" class="form-control" th:field="*{email}"
+                                           placeholder="Email" readonly="readonly"/>
+                                    <small class="text-danger" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></small>
+                                </div>
+
+                                <!-- Họ tên readonly -->
+                                <div class="form-group">
+                                    <input type="text" class="form-control" th:field="*{fullName}"
+                                           placeholder="Họ tên" readonly="readonly"/>
+                                </div>
+
+                                <!-- Địa chỉ -->
+                                <div class="form-group">
+                                    <input type="text" class="form-control" th:field="*{address}"
+                                           placeholder="Địa chỉ nhận hàng" required minlength="5" maxlength="200"/>
+                                    <small class="text-danger" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></small>
+                                </div>
+
+                                <!-- Số điện thoại -->
+                                <div class="form-group">
+                                    <input type="tel" class="form-control" th:field="*{phone}"
+                                           placeholder="Số điện thoại"
+                                           required
+                                           pattern="^(0|\+84)(3|5|7|8|9)\d{8}$"
+                                           title="SĐT di động VN: 0(3|5|7|8|9) + 8 số, hoặc +84(3|5|7|8|9) + 8 số"/>
+                                    <small class="text-danger" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></small>
+                                </div>
+
+                                <!-- Ghi chú -->
+                                <div class="form-group">
+                                    <input type="text" class="form-control" th:field="*{note}"
+                                           placeholder="Ghi chú cho đơn hàng (tuỳ chọn)" maxlength="255"/>
+                                    <small class="text-danger" th:if="${#fields.hasErrors('note')}" th:errors="*{note}"></small>
+                                </div>
+
+                                <!-- Payment -->
+                                <div class="form-group">
+                                    <div class="account-title"><h4>Chọn phương thức thanh toán</h4></div>
+                                    <div class="radio">
+                                        <label style="color:#119744">
+                                            <input type="radio" th:field="*{paymentMethod}" value="cod" checked="checked">
+                                            <strong><em>Ship COD (Thanh toán khi nhận hàng)</em></strong>
+                                        </label>
+                                    </div>
+                                    <div class="radio">
+                                        <label style="color:#119744">
+                                            <input type="radio" th:field="*{paymentMethod}" value="paypal">
+                                            <strong><em>Thanh Toán Với Paypal</em></strong>
+                                        </label>
+                                    </div>
+                                    <small class="text-danger" th:if="${#fields.hasErrors('paymentMethod')}" th:errors="*{paymentMethod}"></small>
+                                </div>
+
+                                <div class="checkout-proced">
+                                    <button type="submit" class="btn btn-inline">Đặt hàng</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<script>
+    function showConfigModalDialog(id, name) {
+        $('#productName').text(name);
+        $('#removeCartForm').attr('action', '/remove/' + encodeURIComponent(id));
+        $('#configmationId').modal('show');
+    }
+</script>
+
+<!-- Modal xác nhận xoá -->
+<div class="modal" id="configmationId">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <button class="modal-close" data-bs-dismiss="modal"><i class="icofont-close"></i></button>
+            <div class="modal-form">
+                <h5 class="modal-title">Xác nhận</h5>
+                <div class="modal-body">
+                    <p>Bạn có muốn xoá sản phẩm " <span style="color: #119744" id="productName"></span> " ra khỏi giỏ hàng không ?</p>
+                </div>
+                <div class="modal-footer">
+                    <form id="removeCartForm" method="post">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button type="submit" class="btn btn-success">Có</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{storefront/fragments/footer :: footer}"></footer>
+
+<script th:src="@{/storefront/vendor/bootstrap/jquery-1.12.4.min.js}"></script>
+<script th:src="@{/storefront/vendor/bootstrap/popper.min.js}"></script>
+<script th:src="@{/storefront/vendor/bootstrap/bootstrap.min.js}"></script>
+<script th:src="@{/storefront/vendor/countdown/countdown.min.js}"></script>
+<script th:src="@{/storefront/vendor/niceselect/nice-select.min.js}"></script>
+<script th:src="@{/storefront/vendor/slickslider/slick.min.js}"></script>
+<script th:src="@{/storefront/vendor/venobox/venobox.min.js}"></script>
+<script th:src="@{/storefront/js/nice-select.js}"></script>
+<script th:src="@{/storefront/js/countdown.js}"></script>
+<script th:src="@{/storefront/js/accordion.js}"></script>
+<script th:src="@{/storefront/js/venobox.js}"></script>
+<script th:src="@{/storefront/js/slick.js}"></script>
+<script th:src="@{/storefront/js/main.js}"></script>
+</body>
+</html>

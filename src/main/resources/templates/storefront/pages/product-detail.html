@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security5">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+    <title>Chi tiết sản phẩm</title>
+
+    <!-- Assets -->
+    <link rel="icon" th:href="@{/storefront/images/favicon.png}"/>
+    <link rel="stylesheet" th:href="@{/storefront/fonts/flaticon/flaticon.css}"/>
+    <link rel="stylesheet" th:href="@{/storefront/fonts/icofont/icofont.min.css}"/>
+    <link rel="stylesheet" th:href="@{/storefront/fonts/fontawesome/fontawesome.min.css}"/>
+    <link rel="stylesheet" th:href="@{/storefront/vendor/venobox/venobox.min.css}"/>
+    <link rel="stylesheet" th:href="@{/storefront/vendor/slickslider/slick.min.css}"/>
+    <link rel="stylesheet" th:href="@{/storefront/vendor/niceselect/nice-select.min.css}"/>
+    <link rel="stylesheet" th:href="@{/storefront/vendor/bootstrap/bootstrap.min.css}"/>
+    <link rel="stylesheet" th:href="@{/storefront/css/main.css}"/>
+</head>
+<body>
+
+<!-- Header -->
+<header th:replace="~{storefront/fragments/header :: header}"></header>
+
+<!-- Banner -->
+<section class="inner-section single-banner"
+         th:style="|background: url(@{/storefront/images/singlebanner.jpg}) no-repeat center|">
+    <div class="container">
+        <h2>CHI TIẾT SẢN PHẨM</h2>
+
+        <!-- Nút quay lại (HTML thuần) -->
+        <div class="mt-2 mb-2">
+            <a class="btn btn-back" th:href="@{/products}">
+                <i class="icofont-long-arrow-left"></i> Quay lại
+            </a>
+        </div>
+
+        <!-- Breadcrumb sạch -->
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/}">Trang chủ</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/products}">Sản phẩm</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Chi tiết</li>
+        </ol>
+    </div>
+</section>
+
+<!-- Nội dung -->
+<section class="inner-section"
+         th:with="p=(${product} ?: ${productDetail}),
+                  outOfStock=${p == null or p.quantity == null or p.quantity <= 0},
+                  finalPrice=${p != null ? (p.price - (p.price * p.discount/100)) : 0}">
+    <div class="container">
+
+        <!-- Không có dữ liệu -->
+        <div th:if="${p == null}" class="text-center my-5">
+            <h3 class="mb-3">Không tìm thấy sản phẩm</h3>
+            <a class="btn btn-gradient" th:href="@{/products}">Quay lại danh sách</a>
+        </div>
+
+        <!-- Có dữ liệu -->
+        <div class="pd-card" th:if="${p != null}">
+            <div class="row g-4 align-items-start">
+
+                <!-- LEFT: ảnh -->
+                <div class="col-lg-5">
+                    <div class="sticky-lg">
+                        <div class="pd-thumb position-relative">
+                            <img th:src="@{'/loadImage?imageName=' + ${p.productImage}}" alt="product" class="w-100"/>
+                            <span class="badge badge-pill badge-sale position-absolute m-3"
+                                  th:if="${p.discount != null and p.discount > 0}">
+                - [[${p.discount}]]%
+              </span>
+                            <span class="badge badge-pill badge-oos position-absolute m-3"
+                                  style="right:0" th:if="${outOfStock}">
+                Hết hàng
+              </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: thông tin -->
+                <div class="col-lg-7 product-details-content">
+                    <h3 class="mb-2">[[${p.productName}]]</h3>
+
+                    <div class="d-flex align-items-center gap-2 mb-2 rating">
+                        <i class="icofont-star"></i><i class="icofont-star"></i>
+                        <i class="icofont-star"></i><i class="icofont-star"></i>
+                        <i class="icofont-star" style="opacity:.35"></i>
+                    </div>
+
+                    <div class="pd-price h4 mb-3">
+                        <del th:if="${p.discount != null && p.discount > 0}">
+                            [[${#numbers.formatDecimal(p.price,1,'DEFAULT',0,'DEFAULT')} + ' đ']]
+                        </del>
+                        <span class="text-success fw-bold">
+              [[${#numbers.formatDecimal(finalPrice,1,'DEFAULT',0,'DEFAULT')} + ' đ']]
+            </span>
+                    </div>
+
+                    <p class="text-muted mb-3" th:text="${p.description}">Mô tả sản phẩm…</p>
+
+                    <!-- ===== YÊU THÍCH (CHUẨN) + THÊM GIỎ ===== -->
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+
+                        <!-- Yêu thích -->
+                        <th:block sec:authorize="isAnonymous()">
+                            <a class="btn btn-soft" th:href="@{/login}">
+                                <i class="fas fa-heart me-1"></i> Thêm vào yêu thích
+                            </a>
+                        </th:block>
+
+<!--                        <th:block sec:authorize="isAuthenticated()">-->
+<!--                            &lt;!&ndash; chưa favorite (null hoặc false) &ndash;&gt;-->
+<!--                            <a class="btn btn-outline-danger"-->
+<!--                               th:if="${p.favorite == null or !p.favorite}"-->
+<!--                               th:href="@{/doFavorite(id=${p.productId}, redirect = '/favorite' )}">-->
+<!--                                <i class="fas fa-heart me-1"></i> Thêm vào yêu thích-->
+<!--                            </a>-->
+
+<!--                             đã favorite-->
+<!--                            <a class="btn btn-warning"-->
+<!--                               th:if="${p.favorite != null and p.favorite}"-->
+<!--                               th:href="@{/doUnFavorite(id=${p.productId}, redirect = '/favorite')}">-->
+<!--                                <i class="fas fa-heart me-1"></i> Bỏ yêu thích-->
+<!--                            </a>-->
+<!--                        </th:block>-->
+                        <th:block sec:authorize="isAuthenticated()">
+
+                            <!-- Nếu chưa favorite -->
+                            <form th:if="${p.favorite == null or !p.favorite}"
+                                  class="inline-action-form"
+                                  th:action="@{/doFavorite(id=${p.productId}, redirect='/productDetail?id=' + ${p.productId})}"
+                                  method="post">
+                                <button type="submit" class="btn btn-outline-danger">
+                                    <i class="fas fa-heart me-1"></i> Thêm vào yêu thích
+                                </button>
+                            </form>
+
+                            <!-- Nếu đã favorite -->
+                            <form th:if="${p.favorite != null and p.favorite}"
+                                  class="inline-action-form"
+                                  th:action="@{/doUnFavorite(id=${p.productId}, redirect='/productDetail?id=' + ${p.productId})}"
+                                  method="post">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-heart me-1"></i> Bỏ yêu thích
+                                </button>
+                            </form>
+
+                        </th:block>
+
+
+                        <!-- Thêm giỏ hàng (logic y như shop.html) -->
+                        <form th:if="${!outOfStock}" class="inline-action-form"
+                              th:action="@{/addToCart(productId=${p.productId})}" method="post">
+                            <button type="submit" class="btn btn-gradient">
+                                <i class="fas fa-shopping-basket me-1"></i> Thêm giỏ hàng
+                            </button>
+                        </form>
+                        <button class="btn btn-secondary" th:if="${outOfStock}" disabled>
+                            <i class="fas fa-box-open me-1"></i> Hết hàng
+                        </button>
+                    </div>
+
+                    <!-- Meta -->
+                    <ul class="pd-meta list-unstyled">
+<!--                        <li><span>SKU:</span> <strong th:text="${p.productId}">ID</strong></li>-->
+                        <li><span>Kho:</span>
+                            <strong th:text="${outOfStock} ? 'Hết hàng' : 'Còn ' + ${p.quantity}">Kho</strong>
+                        </li>
+                        <li><span>Danh mục:</span>
+                            <strong th:text="${p.category != null ? p.category.categoryName : 'Khác'}">Danh mục</strong>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- Intro giữ nguyên theme -->
+<section class="intro-part">
+    <div class="container">
+        <div class="row intro-content">
+            <div class="col-sm-6 col-lg-3">
+                <div class="intro-wrap">
+                    <div class="intro-icon"><i class="fas fa-truck"></i></div>
+                    <div class="intro-content"><h5>Giao Hàng Tận Nhà Miễn Phí</h5><p>Lorem ipsum dolor sit amet adipisicing elit nobis.</p></div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="intro-wrap">
+                    <div class="intro-icon"><i class="fas fa-sync-alt"></i></div>
+                    <div class="intro-content"><h5>Chính Sách Hoàn Trả</h5><p>Lorem ipsum dolor sit amet adipisicing elit nobis.</p></div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="intro-wrap">
+                    <div class="intro-icon"><i class="fas fa-headset"></i></div>
+                    <div class="intro-content"><h5>Hệ Thống Hỗ Trợ</h5><p>Lorem ipsum dolor sit amet adipisicing elit nobis.</p></div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="intro-wrap">
+                    <div class="intro-icon"><i class="fas fa-lock"></i></div>
+                    <div class="intro-content"><h5>Cách Thanh Toán An Toàn</h5><p>Lorem ipsum dolor sit amet adipisicing elit nobis.</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer th:replace="~{storefront/fragments/footer :: footer}"></footer>
+
+<!-- Vendor JS của theme (nếu cần) -->
+<script th:src="@{/storefront/vendor/bootstrap/jquery-1.12.4.min.js}"></script>
+<script th:src="@{/storefront/vendor/bootstrap/popper.min.js}"></script>
+<script th:src="@{/storefront/vendor/bootstrap/bootstrap.min.js}"></script>
+<script th:src="@{/storefront/vendor/countdown/countdown.min.js}"></script>
+<script th:src="@{/storefront/vendor/niceselect/nice-select.min.js}"></script>
+<script th:src="@{/storefront/vendor/slickslider/slick.min.js}"></script>
+<script th:src="@{/storefront/vendor/venobox/venobox.min.js}"></script>
+<script th:src="@{/storefront/js/nice-select.js}"></script>
+<script th:src="@{/storefront/js/countdown.js}"></script>
+<script th:src="@{/storefront/js/accordion.js}"></script>
+<script th:src="@{/storefront/js/venobox.js}"></script>
+<script th:src="@{/storefront/js/slick.js}"></script>
+<script th:src="@{/storefront/js/main.js}"></script>
+</body>
+</html>

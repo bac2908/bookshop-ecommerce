@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta charset="UTF-8" />
+    <title>BOOK_SHOP - Trang quản trị</title>
+    <meta content="width=device-width, initial-scale=1.0, shrink-to-fit=no" name="viewport" />
+    <link rel="icon" href="/admin-assets/img/icon.ico" type="image/x-icon"/>
+
+    <script src="/admin-assets/js/plugin/webfont/webfont.min.js"></script>
+    <script>
+        WebFont.load({
+            google: {"families":["Lato:300,400,700,900"]},
+            custom: {"families":["Flaticon","Font Awesome 5 Solid","Font Awesome 5 Regular","Font Awesome 5 Brands","simple-line-icons"], urls: ['/admin-assets/css/fonts.min.css']},
+            active: function(){ sessionStorage.fonts = true; }
+        });
+    </script>
+
+    <link rel="stylesheet" href="/admin-assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/admin-assets/css/atlantis.min.css">
+    <link rel="stylesheet" href="/admin-assets/css/demo.css">
+    <style>
+        .tbl-thumb{max-height:60px;border:1px solid #eee;padding:2px;border-radius:6px;background:#fff}
+        .thumb-add{max-height:100px;border:1px solid #eee;padding:2px;border-radius:6px;background:#fff;display:block;margin-bottom:8px}
+        .app-alert{
+            background:#10b98114;color:#065f46;border:1px solid #10b98155;
+            padding:10px 12px;border-radius:12px;display:flex;align-items:center;gap:10px
+        }
+        .app-alert .close-x{margin-left:auto;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;
+            color:#065f46;border:1px solid #10b98155;cursor:pointer;background:transparent}
+        .app-alert .close-x:hover{background:#10b98122}
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <th:block th:replace="~{admin/fragments/header :: header}"></th:block>
+    <th:block th:replace="~{admin/fragments/navbar :: navbar}"></th:block>
+
+    <div class="main-panel">
+        <div class="content">
+            <div class="page-inner">
+                <div class="page-header">
+                    <h4 class="page-title">Quản lý thể loại</h4>
+                    <ul class="breadcrumbs">
+                        <li class="nav-home"><a href="javascript:void(0);"><i class="flaticon-home"></i></a></li>
+                        <li class="separator"><i class="flaticon-right-arrow"></i></li>
+                        <li class="nav-item"><a th:href="@{/admin/home}">Trang chủ</a></li>
+                        <li class="separator"><i class="flaticon-right-arrow"></i></li>
+                        <li class="nav-item"><a href="javascript:void(0);">Quản lý thể loại</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="d-flex align-items-center">
+                                <h4 class="card-title" style="text-decoration: underline;">Quản lý thể loại</h4>
+                                <input id="searchName" type="text" class="form-control ml-3" style="max-width:250px;" placeholder="Tìm theo tên thể loại">
+                                <button id="btn-hide" class="btn btn-warning">Thể loại ấn</button>
+                                <button id="btn-visible" class="btn btn-danger">Thể loại hiện</button>
+                                <button id="btn-reset" class="btn btn-secondary">Hiển thị tất cả</button>
+                                <button class="btn btn-primary btn-round ml-auto" data-toggle="modal" data-target="#addRowModal">
+                                    <i class="fa fa-plus"></i> Thêm mới
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <!-- Flash -->
+                            <div th:if="${message}" class="app-alert">
+                                <span th:text="${message}">Thông báo</span>
+                                <button type="button" class="close-x" onclick="this.parentElement.remove()">×</button>
+                            </div>
+
+                            <!-- Modal Add -->
+                            <div class="modal fade" id="addRowModal" tabindex="-1" role="dialog" aria-hidden="true">
+                                <div class="modal-dialog" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header no-bd">
+                                            <h5 class="modal-title"><span class="fw-mediumbold" style="text-decoration: underline; color: black;">Thêm mới thể loại</span></h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <form th:action="@{/admin/addCategory}" th:object="${category}" method="post" enctype="multipart/form-data">
+                                                <div class="row">
+                                                    <div class="col-sm-12">
+                                                        <img class="thumb-add"
+                                                             th:if="${category.categoryImage != null and !#strings.isEmpty(category.categoryImage)}"
+                                                             th:src="@{'/loadImage?imageName=' + ${category.categoryImage}}"
+                                                             alt="preview">
+                                                    </div>
+                                                    <div class="col-sm-12">
+                                                        <div class="form-group form-group-default">
+                                                            <label>Tên thể loại</label>
+                                                            <input th:field="*{categoryName}" type="text" class="form-control" placeholder="Tên thể loại" required>
+                                                            <small class="text-danger" th:if="${#fields.hasErrors('categoryName')}" th:errors="*{categoryName}"></small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-12">
+                                                        <div class="form-group form-group-default">
+                                                            <label>Trạng thái</label>
+                                                            <select class="form-control" th:field="*{status}">
+                                                                <option th:value="true">HIỂN THỊ</option>
+                                                                <option th:value="false">ẨN</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-12">
+                                                        <div class="form-group form-group-default">
+                                                            <label>Ảnh thể loại (tùy chọn)</label>
+                                                            <input type="file" id="addFile" name="file" class="form-control" accept="image/*">
+                                                            <input type="hidden" th:field="*{categoryImage}">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer no-bd">
+                                                    <button type="submit" class="btn btn-primary">Thêm</button>
+                                                    <button type="button" class="btn btn-danger" data-dismiss="modal">Hủy</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Table -->
+                            <div class="table-responsive">
+                                <table id="add-row" class="display table table-striped table-hover">
+                                    <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Tên</th>
+                                        <th>Ảnh</th>
+                                        <th>Status</th>
+                                        <th style="width: 14%">Action</th>
+                                    </tr>
+                                    </thead>
+                                    <tfoot>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Tên</th>
+                                        <th>Ảnh</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                    </tfoot>
+                                    <tbody>
+                                    <tr th:each="item : ${categories}">
+                                        <td>[[${item.categoryId}]]</td>
+                                        <td>[[${item.categoryName}]]</td>
+                                        <td><img class="tbl-thumb" th:src="@{/loadImage(imageName=${item.categoryImage})}" alt="category"></td>
+                                        <td>
+                                            <span th:if="${item.status == null || item.status}" class="badge badge-success">HIỂN THỊ</span>
+                                            <span th:if="${item.status != null && !item.status}" class="badge badge-secondary">ẨN</span>
+                                        </td>
+                                        <td>
+                                            <div class="form-button-action">
+                                                <a th:href="@{/admin/editCategory/{id}(id=${item.categoryId})}"
+                                                   class="btn btn-link btn-primary btn-lg" title="Chỉnh sửa">
+                                                    <i class="fa fa-edit"></i>
+                                                </a>
+
+                                                <!-- Ẩn -->
+                                                <th:block th:if="${item.status == null || item.status}">
+                                                    <button type="button" class="btn btn-link btn-danger"
+                                                            th:attr="data-target=${'#hideModal-' + item.categoryId}"
+                                                            data-toggle="modal" title="Ẩn">
+                                                        <i class="fa fa-times"></i>
+                                                    </button>
+
+                                                    <!-- Modal xác nhận Ẩn -->
+                                                    <div class="modal fade" th:id="${'hideModal-' + item.categoryId}" tabindex="-1" role="dialog" aria-hidden="true">
+                                                        <div class="modal-dialog" role="document">
+                                                            <div class="modal-content">
+                                                                <div class="modal-header">
+                                                                    <h5 class="modal-title">Ẩn thể loại?</h5>
+                                                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                        <span aria-hidden="true">&times;</span>
+                                                                    </button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    Ẩn (ngừng bán) thể loại <b th:text="${item.categoryName}">Tên</b>?
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                                                                    <form th:action="@{/admin/delete/{id}(id=${item.categoryId})}" method="post">
+                                                                        <button class="btn btn-danger" type="submit">Xác nhận Ẩn</button>
+                                                                    </form>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </th:block>
+
+                                                <!-- Hiển thị lại -->
+                                                <th:block th:if="${item.status != null && !item.status}">
+                                                    <button type="button" class="btn btn-link btn-success"
+                                                            th:attr="data-target=${'#restoreModal-' + item.categoryId}"
+                                                            data-toggle="modal" title="Hiển thị lại">
+                                                        <i class="fa fa-undo"></i>
+                                                    </button>
+
+                                                    <div class="modal fade" th:id="${'restoreModal-' + item.categoryId}" tabindex="-1" role="dialog" aria-hidden="true">
+                                                        <div class="modal-dialog" role="document">
+                                                            <div class="modal-content">
+                                                                <div class="modal-header">
+                                                                    <h5 class="modal-title">Hiển thị lại?</h5>
+                                                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                        <span aria-hidden="true">&times;</span>
+                                                                    </button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    Mở bán lại thể loại <b th:text="${item.categoryName}">Tên</b>?
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                                                                    <form th:action="@{/admin/restoreCategory/{id}(id=${item.categoryId})}" method="post">
+                                                                        <button class="btn btn-success" type="submit">Xác nhận</button>
+                                                                    </form>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </th:block>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div><!-- /table-responsive -->
+                        </div><!-- /card-body -->
+                    </div><!-- /card -->
+                </div><!-- /col -->
+            </div><!-- /page-inner -->
+        </div><!-- /content -->
+
+        <footer class="footer">
+            <div class="container-fluid">
+                <div class="copyright ml-auto">
+                    2025, made with <i class="fa fa-heart heart text-danger"></i> by <a href="javascript:void(0);">BOOK-SHOP</a>
+                </div>
+            </div>
+        </footer>
+    </div><!-- /main-panel -->
+</div><!-- /wrapper -->
+
+<script src="/admin-assets/js/core/jquery.3.2.1.min.js"></script>
+<script src="/admin-assets/js/core/popper.min.js"></script>
+<script src="/admin-assets/js/core/bootstrap.min.js"></script>
+<script src="/admin-assets/js/plugin/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
+<script src="/admin-assets/js/plugin/jquery-ui-touch-punch/jquery.ui.touch-punch.min.js"></script>
+<script src="/admin-assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js"></script>
+<script src="/admin-assets/js/plugin/datatables/datatables.min.js"></script>
+<script src="/admin-assets/js/atlantis.min.js"></script>
+<script src="/admin-assets/js/setting-demo2.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('searchName');
+        const tableRows = document.querySelectorAll('#add-row tbody tr');
+        const btnVisible = document.getElementById("btn-visible");
+        const btnHidden = document.getElementById("btn-hide");
+        const btnReset = document.getElementById("btn-reset");
+
+
+
+        let timer;
+        let currentFilter = "all"; // all / visible / hidden
+
+        // ====== Search theo tên thể loại ======
+        searchInput.addEventListener('keyup', function () {
+            clearTimeout(timer);
+            const keyword = this.value.toLowerCase();
+
+            timer = setTimeout(() => {
+                filterRows(keyword, currentFilter);
+            }, 200);
+        });
+
+        // ====== Lọc theo search + trạng thái ======
+        function filterRows(keyword, type) {
+            tableRows.forEach(row => {
+                const nameCell = row.cells[1].textContent.toLowerCase(); // cột tên
+                const statusText = row.cells[3].textContent.trim();     // cột trạng thái
+
+                let matchSearch = nameCell.includes(keyword);
+                let matchFilter =
+                    type === "visible" ? statusText === "HIỂN THỊ" :
+                        type === "hidden" ? statusText === "ẨN" :
+                            true;
+
+                row.style.display = (matchSearch && matchFilter) ? "" : "none";
+            });
+        }
+
+        // ====== Đếm số lượng ngay khi load ======
+        let visibleCount = 0, hiddenCount = 0;
+        tableRows.forEach(row => {
+            const statusText = row.cells[3].textContent.trim();
+            if (statusText === "HIỂN THỊ") visibleCount++;
+            else if (statusText === "ẨN") hiddenCount++;
+        });
+
+        btnVisible.textContent = `Thể loại HIỂN THỊ (${visibleCount})`;
+        btnHidden.textContent = `Thể loại ẨN (${hiddenCount})`;
+
+        // ====== Gán sự kiện cho nút ======
+        btnVisible.onclick = () => { currentFilter = "visible"; filterRows(searchInput.value.toLowerCase(), currentFilter); };
+        btnHidden.onclick = () => { currentFilter = "hidden"; filterRows(searchInput.value.toLowerCase(), currentFilter); };
+        btnReset.onclick = () => { currentFilter = "all"; filterRows(searchInput.value.toLowerCase(), currentFilter); };
+    });
+</script>
+
+
+</body>
+</html>
