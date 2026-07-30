@@ -3,8 +3,8 @@ package vn.fs.backend.security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import vn.fs.backend.application.service.IpLockService;
-import vn.fs.backend.application.service.UserLockService;
+import vn.fs.backend.application.service.LoginAttemptService;
+import vn.fs.backend.application.service.LoginAttemptService.BlockReason;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -16,10 +16,7 @@ import java.io.IOException;
 public class PreLoginLockFilter extends OncePerRequestFilter {
 
     @Autowired
-    private UserLockService userLockService;
-
-    @Autowired
-    private IpLockService ipLockService;
+    private LoginAttemptService loginAttemptService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
@@ -27,12 +24,13 @@ public class PreLoginLockFilter extends OncePerRequestFilter {
 
         if ("/doLogin".equals(req.getRequestURI()) && "POST".equalsIgnoreCase(req.getMethod())) {
             String ip = IpUtils.getClientIp(req);
-            if (ipLockService.isLocked(ip)) {
+            String loginId = req.getParameter("username");
+            BlockReason reason = loginAttemptService.blockReason(loginId, ip);
+            if (reason == BlockReason.IP_LOCKED) {
                 res.sendRedirect("/login?lockedIp");
                 return;
             }
-            String loginId = req.getParameter("username");
-            if (loginId != null && userLockService.isLocked(loginId.trim())) {
+            if (reason == BlockReason.USER_LOCKED) {
                 res.sendRedirect("/login?lockedUser");
                 return;
             }

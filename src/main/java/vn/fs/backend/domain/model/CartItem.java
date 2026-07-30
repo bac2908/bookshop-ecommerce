@@ -16,10 +16,7 @@ public class CartItem {
     private Product product;
 
     public double getUnitPriceAfterDiscount() {
-        if (product == null) return unitPrice;
-        double price = product.getPrice();
-        double discount = product.getDiscount() / 100.0;
-        return price * (1.0 - discount);
+        return unitPrice;
     }
 
     public double getLineTotal() {

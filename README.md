@@ -62,6 +62,24 @@ docker compose up -d --build
 
 Không commit `.env` hoặc secret thật vào Git.
 
+## Tạo quản trị viên đầu tiên
+
+Hệ thống không tạo tài khoản ADMIN với mật khẩu mặc định. Khi database chưa có
+ADMIN, điền các biến sau trong `.env`:
+
+```text
+ADMIN_BOOTSTRAP_ENABLED=true
+ADMIN_BOOTSTRAP_USERNAME=your_admin
+ADMIN_BOOTSTRAP_EMAIL=your_admin@example.com
+ADMIN_BOOTSTRAP_PASSWORD=use-a-unique-password-at-least-12-characters
+ADMIN_BOOTSTRAP_NAME=Administrator
+ADMIN_BOOTSTRAP_PHONE=0900000000
+```
+
+Chạy `docker compose up -d --build`, đăng nhập thành công, rồi đổi
+`ADMIN_BOOTSTRAP_ENABLED=false` và chạy lại container. Bootstrap không ghi mật
+khẩu ra log và tự bỏ qua khi đã có ít nhất một ADMIN hoạt động.
+
 ## Các lệnh hữu ích
 
 Build và chạy test trực tiếp trên máy yêu cầu JDK 17:
@@ -93,3 +111,6 @@ Backend được chia thành `presentation`, `application`, `domain` và
 
 Xem luồng xử lý, quy tắc dependency và cách tìm lỗi tại
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+Lộ trình chuyển từng chức năng sang REST API được theo dõi tại
+[`docs/API_MIGRATION.md`](docs/API_MIGRATION.md).

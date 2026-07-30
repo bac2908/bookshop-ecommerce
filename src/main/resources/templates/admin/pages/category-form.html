@@ -40,7 +40,11 @@
 
                             <!-- NHỚ enctype -->
                             <form th:action="@{/admin/editCategory/{id}(id=${category.categoryId})}"
-                                  th:object="${category}" method="post" enctype="multipart/form-data">
+                                  th:object="${category}"
+                                  method="post"
+                                  enctype="multipart/form-data"
+                                  data-admin-category-update
+                                  th:attr="data-category-id=${category.categoryId}">
                                 <div class="row">
                                     <div class="col-lg-8 offset-lg-2">
 

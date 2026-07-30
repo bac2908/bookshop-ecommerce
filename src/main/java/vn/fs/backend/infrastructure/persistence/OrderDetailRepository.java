@@ -27,8 +27,10 @@ public interface OrderDetailRepository extends JpaRepository<OrderDetail, Long> 
                     "       AVG(o.price)              AS avg, " +
                     "       MIN(o.price)              AS min, " +
                     "       MAX(o.price)              AS max " +
-                    "FROM order_details o " +
+            "FROM order_details o " +
                     "JOIN products p ON o.product_id = p.product_id " +
+                    "JOIN orders ord ON o.order_id = ord.order_id " +
+                    "WHERE ord.status = 2 " +
                     "GROUP BY p.product_name",
             nativeQuery = true)
     List<Object[]> repo();
@@ -43,6 +45,8 @@ public interface OrderDetailRepository extends JpaRepository<OrderDetail, Long> 
                     "FROM order_details o " +
                     "JOIN products p   ON o.product_id = p.product_id " +
                     "JOIN categories c ON p.category_id = c.category_id " +
+                    "JOIN orders ord ON o.order_id = ord.order_id " +
+                    "WHERE ord.status = 2 " +
                     "GROUP BY c.category_name",
             nativeQuery = true)
     List<Object[]> repoWhereCategory();
@@ -56,6 +60,7 @@ public interface OrderDetailRepository extends JpaRepository<OrderDetail, Long> 
                     "       MAX(o.price)               AS max " +
                     "FROM order_details o " +
                     "JOIN orders od ON o.order_id = od.order_id " +
+                    "WHERE od.status = 2 " +
                     "GROUP BY YEAR(od.order_date)",
             nativeQuery = true)
     List<Object[]> repoWhereYear();
@@ -69,6 +74,7 @@ public interface OrderDetailRepository extends JpaRepository<OrderDetail, Long> 
                     "       MAX(o.price)               AS max " +
                     "FROM order_details o " +
                     "JOIN orders od ON o.order_id = od.order_id " +
+                    "WHERE od.status = 2 " +
                     "GROUP BY MONTH(od.order_date)",
             nativeQuery = true)
     List<Object[]> repoWhereMonth();
@@ -82,6 +88,7 @@ public interface OrderDetailRepository extends JpaRepository<OrderDetail, Long> 
                     "       MAX(o.price)               AS max " +
                     "FROM order_details o " +
                     "JOIN orders od ON o.order_id = od.order_id " +
+                    "WHERE od.status = 2 " +
                     "GROUP BY QUARTER(od.order_date)",
             nativeQuery = true)
     List<Object[]> repoWhereQUARTER();
@@ -96,6 +103,7 @@ public interface OrderDetailRepository extends JpaRepository<OrderDetail, Long> 
                     "FROM order_details odt " +
                     "JOIN orders o  ON odt.order_id = o.order_id " +
                     "JOIN user   u  ON o.user_id    = u.user_id " +
+                    "WHERE o.status = 2 " +
             "GROUP BY COALESCE(u.name, u.email)",
     nativeQuery = true)
     List<Object[]> reportCustomer();
@@ -105,7 +113,7 @@ public interface OrderDetailRepository extends JpaRepository<OrderDetail, Long> 
                     "FROM order_details od " +
                     "JOIN orders o ON o.order_id = od.order_id " +
                     "WHERE o.order_date >= :from " +
-                    "  AND o.status IN (1,2,3)",
+                    "  AND o.status = 2",
             nativeQuery = true)
     long totalSoldQtyFrom(@Param("from") LocalDate from);
 
@@ -114,7 +122,7 @@ public interface OrderDetailRepository extends JpaRepository<OrderDetail, Long> 
                     "FROM order_details od " +
                     "JOIN orders o ON o.order_id = od.order_id " +
                     "WHERE o.order_date >= :from " +
-                    "  AND o.status IN (1,2,3) " +
+                    "  AND o.status = 2 " +
                     "GROUP BY DATE(o.order_date) " +
                     "ORDER BY d",
             nativeQuery = true)

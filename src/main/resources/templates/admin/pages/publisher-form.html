@@ -36,7 +36,10 @@
                         <div class="card-body">
 
                             <form th:action="@{/admin/editNxb/{id}(id=${nxb.id})}"
-                                  th:object="${nxb}" method="post">
+                                  th:object="${nxb}"
+                                  method="post"
+                                  data-admin-publisher-update
+                                  th:attr="data-publisher-id=${nxb.id}">
                                 <div class="row">
                                     <div class="col-lg-8 offset-lg-2">
 

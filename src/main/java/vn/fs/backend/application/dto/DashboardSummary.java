@@ -15,4 +15,5 @@ public class DashboardSummary {
     public long getNewUsers7d() { return newUsers7d; }
     public long getSalesQty7d() { return salesQty7d; }
     public long getOrders7d() { return orders7d; }
+    public double getIncome7d() { return income7d; }
 }

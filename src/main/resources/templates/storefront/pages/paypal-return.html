@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Đang xử lý PayPal - Book Shop</title>
+    <link rel="stylesheet" href="/storefront/css/bootstrap.min.css">
+</head>
+<body>
+<main class="container py-5 text-center"
+      data-paypal-return
+      th:data-action="${paypalAction}"
+      th:data-token="${paypalToken}">
+    <h1 class="h3 mb-3">Đang xác minh thanh toán</h1>
+    <p>Vui lòng không đóng trang trong khi hệ thống xử lý kết quả từ PayPal.</p>
+
+    <form method="post"
+          th:action="${paypalAction == 'capture'} ? @{/pay/success} : @{/pay/cancel}">
+        <input type="hidden" name="token" th:value="${paypalToken}">
+        <noscript>
+            <p>JavaScript đang bị tắt. Nhấn nút dưới đây để tiếp tục an toàn.</p>
+            <button type="submit" class="btn btn-primary">Tiếp tục</button>
+        </noscript>
+    </form>
+</main>
+<script src="/storefront/js/api-client.js"></script>
+<script src="/storefront/js/checkout-order.js"></script>
+</body>
+</html>

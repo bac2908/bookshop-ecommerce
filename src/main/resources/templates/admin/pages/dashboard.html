@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="/admin-assets/css/atlantis.min.css">
     <link rel="stylesheet" href="/admin-assets/css/demo.css">
 </head>
-<body>
+<body data-admin-dashboard-days="7">
 <div class="wrapper">
 
     <!-- Header & Navbar -->
@@ -84,7 +84,7 @@
                                     <div class="col-md-4 d-flex flex-column justify-content-around">
                                         <div>
                                             <h6 class="fw-bold text-uppercase text-success op-8">Tổng doanh thu</h6>
-                                            <h3 class="fw-bold" th:text="${totalIncomeFormatted} ?: '0'">0</h3>
+                                            <h3 id="dashboard-total-income" class="fw-bold" th:text="${totalIncomeFormatted} ?: '0'">0</h3>
                                         </div>
                                         <div>
                                             <h6 class="fw-bold text-uppercase text-danger op-8">Tổng chi</h6>
@@ -136,7 +136,7 @@
                             </div>
                             <div class="card-body pb-0">
                                 <div class="mb-4 mt-2">
-                                    <h1 th:text="${dailySalesHeadline} ?: '0'">0</h1>
+                                    <h1 id="dashboard-last-day-orders" th:text="${dailySalesHeadline} ?: '0'">0</h1>
                                 </div>
                                 <div class="pull-in">
                                     <canvas id="dailySalesChart"></canvas>
@@ -146,8 +146,8 @@
 
                         <div class="card">
                             <div class="card-body pb-0">
-                                <div class="h1 fw-bold float-right text-warning" th:text="${transactionsDelta} ?: '+0%'">+0%</div>
-                                <h2 class="mb-2" th:text="${transactionsCount} ?: 0">0</h2>
+                                <div id="dashboard-transactions-delta" class="h1 fw-bold float-right text-warning" th:text="${transactionsDelta} ?: '+0%'">+0%</div>
+                                <h2 id="dashboard-transactions-count" class="mb-2" th:text="${transactionsCount} ?: 0">0</h2>
                                 <p class="text-muted">Giao dịch</p>
                                 <div class="pull-in sparkline-fix">
                                     <div id="lineChart"></div>
@@ -205,54 +205,95 @@
 <script th:inline="javascript">
     /*<![CDATA[*/
     var kpis = /*[[${kpis}]]*/ null;
-    var newUsers    = (kpis && kpis.newUsers    != null) ? kpis.newUsers    : 0;
-    var orders7d    = (kpis && kpis.orders7d    != null) ? kpis.orders7d    : 0;
-    var subscribers = (kpis && kpis.subscribers != null) ? kpis.subscribers : 0; // = SL bán (7 ngày)
-
     var incomeLabels = /*[[${incomeLabels}]]*/ [];
     var incomeValues = /*[[${incomeValues}]]*/ [];
-
     var ordersLabels = /*[[${ordersLabels}]]*/ [];
     var ordersValues = /*[[${ordersValues}]]*/ [];
+    var fallback = {
+        summary: {
+            newUsers7d: (kpis && kpis.newUsers) || 0,
+            orders7d: (kpis && kpis.orders7d) || 0,
+            salesQty7d: (kpis && kpis.subscribers) || 0,
+            income7d: incomeValues.reduce(function (sum, value) {
+                return sum + Number(value || 0);
+            }, 0)
+        },
+        income: incomeLabels.map(function (date, index) {
+            return { date: date, value: incomeValues[index] || 0 };
+        }),
+        orders: ordersLabels.map(function (date, index) {
+            return { date: date, value: ordersValues[index] || 0 };
+        }),
+        newUsers: ordersLabels.map(function (date) {
+            return { date: date, value: 0 };
+        })
+    };
 
-    var transactionsSmall = /*[[${transactionsSmall}]]*/ [0,0,0,0,0];
+    function values(points) {
+        return (points || []).map(function (point) {
+            return Number(point.value || 0);
+        });
+    }
 
-    // Circles
-    Circles.create({ id:'circles-1', radius:45, value: Math.min(newUsers,100), maxValue:100, width:7, text: newUsers, colors:['#f1f1f1','#FF9E27'], duration:400, wrpClass:'circles-wrp', textClass:'circles-text', styleWrapper:true, styleText:true });
-    Circles.create({ id:'circles-2', radius:45, value: Math.min(orders7d,100), maxValue:100, width:7, text: orders7d, colors:['#f1f1f1','#2BB930'], duration:400, wrpClass:'circles-wrp', textClass:'circles-text', styleWrapper:true, styleText:true });
-    Circles.create({ id:'circles-3', radius:45, value: Math.min(subscribers,100), maxValue:100, width:7, text: subscribers, colors:['#f1f1f1','#F25961'], duration:400, wrpClass:'circles-wrp', textClass:'circles-text', styleWrapper:true, styleText:true });
+    function labels(points) {
+        return (points || []).map(function (point) {
+            return point.date;
+        });
+    }
 
-    // Income Bar
-    var ctxIncome = document.getElementById('totalIncomeChart').getContext('2d');
-    new Chart(ctxIncome, {
-        type: 'bar',
-        data: { labels: incomeLabels, datasets: [{ label: 'Doanh thu', backgroundColor: '#ff9e27', borderColor: 'rgb(23,125,255)', data: incomeValues }] },
-        options: {
-            responsive:true, maintainAspectRatio:false, legend:{display:false},
-            scales:{ yAxes:[{ticks:{beginAtZero:true}, gridLines:{drawBorder:false}}], xAxes:[{gridLines:{drawBorder:false,display:false}}] }
-        }
-    });
+    function renderDashboard(data) {
+        var summary = data.summary || fallback.summary;
+        var income = data.income || fallback.income;
+        var orders = data.orders || fallback.orders;
+        var newUsers = data.newUsers || fallback.newUsers;
+        var orderValues = values(orders);
+        var lastOrders = orderValues.length
+            ? orderValues[orderValues.length - 1]
+            : 0;
+        var firstOrders = orderValues.length ? orderValues[0] : 0;
+        var delta = firstOrders > 0
+            ? ((lastOrders - firstOrders) / firstOrders) * 100
+            : (lastOrders > 0 ? 100 : 0);
 
-    // Orders Line (Daily Sales)
-    var ctxDaily = document.getElementById('dailySalesChart').getContext('2d');
-    new Chart(ctxDaily, {
-        type: 'line',
-        data: { labels: ordersLabels, datasets: [{ label: 'Số đơn hàng', data: ordersValues, fill:true, backgroundColor:'rgba(40,120,255,.15)', borderColor:'#2878ff', borderWidth:2, pointRadius:2 }] },
-        options: { responsive:true, maintainAspectRatio:false, legend:{display:false}, scales:{ yAxes:[{ticks:{beginAtZero:true}}] } }
-    });
+        document.getElementById('dashboard-total-income').textContent =
+            new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND',
+                maximumFractionDigits: 0
+            }).format(summary.income7d || 0);
+        document.getElementById('dashboard-last-day-orders').textContent = lastOrders;
+        document.getElementById('dashboard-transactions-count').textContent =
+            orderValues.reduce(function (sum, value) { return sum + value; }, 0);
+        document.getElementById('dashboard-transactions-delta').textContent =
+            (delta >= 0 ? '+' : '') + Math.round(delta) + '%';
 
-    // Sparkline
-    $('#lineChart').sparkline(transactionsSmall, {
-        type:'line', height:'70', width:'100%', lineWidth:2, lineColor:'#ffa534', fillColor:'rgba(255,165,52,.14)'
-    });
+        Circles.create({ id:'circles-1', radius:45, value:Math.min(summary.newUsers7d || 0,100), maxValue:100, width:7, text:summary.newUsers7d || 0, colors:['#f1f1f1','#FF9E27'], duration:400, wrpClass:'circles-wrp', textClass:'circles-text', styleWrapper:true, styleText:true });
+        Circles.create({ id:'circles-2', radius:45, value:Math.min(summary.orders7d || 0,100), maxValue:100, width:7, text:summary.orders7d || 0, colors:['#f1f1f1','#2BB930'], duration:400, wrpClass:'circles-wrp', textClass:'circles-text', styleWrapper:true, styleText:true });
+        Circles.create({ id:'circles-3', radius:45, value:Math.min(summary.salesQty7d || 0,100), maxValue:100, width:7, text:summary.salesQty7d || 0, colors:['#f1f1f1','#F25961'], duration:400, wrpClass:'circles-wrp', textClass:'circles-text', styleWrapper:true, styleText:true });
 
-    // “Thống kê người dùng” – demo dùng cùng dữ liệu orders
-    var ctxUsers = document.getElementById('statisticsChart').getContext('2d');
-    new Chart(ctxUsers, {
-        type:'line',
-        data:{ labels: ordersLabels, datasets:[{label:'Người dùng hoạt động', data: ordersValues, fill:true, borderColor:'#31ce36', backgroundColor:'rgba(49,206,54,.15)'}] },
-        options:{ responsive:true, maintainAspectRatio:false, legend:{display:false} }
-    });
+        new Chart(document.getElementById('totalIncomeChart').getContext('2d'), {
+            type:'bar',
+            data:{labels:labels(income),datasets:[{label:'Doanh thu',backgroundColor:'#ff9e27',borderColor:'rgb(23,125,255)',data:values(income)}]},
+            options:{responsive:true,maintainAspectRatio:false,legend:{display:false},scales:{yAxes:[{ticks:{beginAtZero:true},gridLines:{drawBorder:false}}],xAxes:[{gridLines:{drawBorder:false,display:false}}]}}
+        });
+        new Chart(document.getElementById('dailySalesChart').getContext('2d'), {
+            type:'line',
+            data:{labels:labels(orders),datasets:[{label:'Số đơn hàng',data:orderValues,fill:true,backgroundColor:'rgba(40,120,255,.15)',borderColor:'#2878ff',borderWidth:2,pointRadius:2}]},
+            options:{responsive:true,maintainAspectRatio:false,legend:{display:false},scales:{yAxes:[{ticks:{beginAtZero:true}}]}}
+        });
+        $('#lineChart').sparkline(orderValues, {
+            type:'line',height:'70',width:'100%',lineWidth:2,lineColor:'#ffa534',fillColor:'rgba(255,165,52,.14)'
+        });
+        new Chart(document.getElementById('statisticsChart').getContext('2d'), {
+            type:'line',
+            data:{labels:labels(newUsers),datasets:[{label:'Người dùng mới',data:values(newUsers),fill:true,borderColor:'#31ce36',backgroundColor:'rgba(49,206,54,.15)'}]},
+            options:{responsive:true,maintainAspectRatio:false,legend:{display:false}}
+        });
+    }
+
+    window.bookshopApi.get('/api/v1/admin/dashboard?days=7')
+        .then(renderDashboard)
+        .catch(function () { renderDashboard(fallback); });
     /*]]>*/
 </script>
 </body>

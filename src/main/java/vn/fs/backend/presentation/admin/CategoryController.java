@@ -9,14 +9,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import vn.fs.backend.application.dto.CategoryDTO;
-import vn.fs.backend.domain.model.User;
 import vn.fs.backend.application.service.CategoryService;
 import vn.fs.backend.application.service.ImageStorageService;
-import vn.fs.backend.infrastructure.persistence.UserRepository;
-import vn.fs.backend.application.service.ProductService;
 
 import jakarta.validation.Valid;
-import java.security.Principal;
 
 @Controller
 @RequestMapping("/admin")
@@ -25,18 +21,6 @@ public class CategoryController {
 
     private final CategoryService categoryService;
     private final ImageStorageService image;   // dùng check file hợp lệ
-    private final UserRepository userRepository;
-    private final ProductService productService;
-
-    /* bind user cho header */
-    @ModelAttribute("user")
-    public User user(Model model, Principal principal) {
-        if (principal == null) return null;
-        User u = userRepository.findByEmail(principal.getName());
-        model.addAttribute("user", u);
-        return u;
-    }
-
     /* bind list category cho bảng */
     @ModelAttribute("categories")
     public java.util.List<vn.fs.backend.domain.model.Category> categories(Model model) {
@@ -81,7 +65,7 @@ public class CategoryController {
         }
 
         // nếu có file thì thử lưu tạm để check hợp lệ (jpg, jpeg, png, webp)
-        if (file != null && !file.isEmpty() && image.saveTemp(file) == null) {
+        if (!image.isValidUpload(file)) {
             br.rejectValue("categoryId", null, "Ảnh không hợp lệ (jpg, jpeg, png, webp).");
         }
 
@@ -118,7 +102,7 @@ public class CategoryController {
         }
 
         // có file thì check hợp lệ bằng cách save tạm
-        if (file != null && !file.isEmpty() && image.saveTemp(file) == null) {
+        if (!image.isValidUpload(file)) {
             br.rejectValue("categoryId", null, "Ảnh không hợp lệ (jpg, jpeg, png, webp).");
         }
 
@@ -157,7 +141,6 @@ public class CategoryController {
     @PostMapping("/restoreCategory/{id}")
     public String restore(@PathVariable("id") Long id, RedirectAttributes ra) {
         categoryService.restore(id);
-        productService.restoreByCategory(id);
         ra.addFlashAttribute("message", "Đã HIỂN THỊ lại thể loại (sản phẩm đã mở bán lại).");
         ra.addFlashAttribute("alertType", "success");
         return "redirect:/admin/categories";

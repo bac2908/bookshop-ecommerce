@@ -1,220 +1,409 @@
 package vn.fs.backend.application.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+
+import jakarta.mail.MessagingException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import vn.fs.backend.application.dto.CartSnapshot;
 import vn.fs.backend.application.dto.CheckoutAddressDTO;
+import vn.fs.backend.application.dto.CheckoutResult;
+import vn.fs.backend.application.error.CartChangedDuringCheckoutException;
+import vn.fs.backend.application.error.EmptyCartException;
+import vn.fs.backend.application.error.InsufficientStockException;
+import vn.fs.backend.application.error.InvalidOrderStateException;
+import vn.fs.backend.application.error.OrderNotFoundException;
+import vn.fs.backend.application.error.ProductUnavailableException;
+import vn.fs.backend.application.service.impl.ExchangeRateService;
+import vn.fs.backend.application.service.paypal.PaypalOrdersV2Service;
 import vn.fs.backend.domain.model.CartItem;
 import vn.fs.backend.domain.model.Order;
 import vn.fs.backend.domain.model.OrderDetail;
 import vn.fs.backend.domain.model.OrderPayment;
+import vn.fs.backend.domain.model.OrderStatus;
+import vn.fs.backend.domain.model.Product;
 import vn.fs.backend.domain.model.User;
 import vn.fs.backend.infrastructure.persistence.OrderDetailRepository;
 import vn.fs.backend.infrastructure.persistence.OrderPaymentRepository;
 import vn.fs.backend.infrastructure.persistence.OrderRepository;
 import vn.fs.backend.infrastructure.persistence.ProductRepository;
-import vn.fs.backend.application.service.impl.ExchangeRateService;
-import vn.fs.backend.application.service.paypal.PaypalOrdersV2Service;
+import vn.fs.backend.infrastructure.persistence.UserRepository;
 import vn.fs.backend.shared.util.Utils;
-
-import jakarta.mail.MessagingException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.Collection;
-import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
 public class CheckoutService {
 
+    private static final String PAYPAL = "PAYPAL";
+
     private final ShoppingCartService cart;
     private final OrderRepository orderRepository;
     private final OrderDetailRepository orderDetailRepository;
+    private final OrderPaymentRepository paymentRepository;
     private final ProductRepository productRepository;
-    private final OrderPaymentRepository paymentRepo;
+    private final UserRepository userRepository;
+    private final OrderService orderService;
     private final ExchangeRateService exchangeRateService;
     private final PaypalOrdersV2Service paypalV2;
     private final OrderConfirmationMailService orderConfirmationMailService;
+    private final PlatformTransactionManager transactionManager;
 
-    public static final String DRAFT_KEY = "orderDraft";
-
-    /** v2: Tạo PayPal Order → trả approve URL */
-    public String beginPaypalCheckout(User user, CheckoutAddressDTO dto, HttpServletRequest req, HttpSession session)
-            throws Exception {
-
-        // Snapshot giỏ hàng + tỷ giá
-        double totalVnd = cart.getAmount();
-        double rate = exchangeRateService.getVNDExchangeRate();
-        BigDecimal usdAmount = BigDecimal.valueOf(totalVnd / rate).setScale(2, RoundingMode.HALF_UP);
-
-        // Lưu draft (địa chỉ, phone) + snapshot vào session
-        Order draft = draftFrom(dto);
-        draft.setAmount(totalVnd);
-        session.setAttribute(DRAFT_KEY, draft);
-        session.setAttribute("exchangeRate", rate);
-        session.setAttribute("usdAmount", usdAmount.doubleValue());
-
-        String base = Utils.getBaseURL(req);
-        if (!base.endsWith("/")) base = base + "/";
-        String successUrl = base + "pay/success"; // PayPal v2 sẽ trả về token=orderId
-        String cancelUrl  = base + "pay/cancel";
-
-        var created = paypalV2.createOrder(usdAmount, "USD", successUrl, cancelUrl);
-        session.setAttribute("orderId_pp_hint", created.orderId); // optional debug
-
-        return created.approveUrl;
+    public CheckoutResult placeOrderCOD(
+            User user,
+            CheckoutAddressDTO address,
+            HttpSession session) {
+        CheckoutResult result = inTransaction(() -> {
+            User lockedUser = lockUser(user);
+            CartSnapshot snapshot = requireCart();
+            Order order = reserveInventoryAndCreateOrder(
+                    lockedUser,
+                    address,
+                    OrderStatus.PENDING_CONFIRMATION,
+                    snapshot);
+            cart.clear();
+            scheduleConfirmationEmail(lockedUser, order, snapshot);
+            return new CheckoutResult(
+                    order.getOrderId(),
+                    order.getOrderStatus(),
+                    "COD",
+                    null,
+                    null);
+        });
+        cleanupSession(session);
+        return result;
     }
 
-    /** v2: Sau khi approve → capture + ghi Order/OrderDetails/order_payments */
-    @Transactional
-    public Long finalizePaypalV2(User user, String orderId, HttpSession session) throws Exception {
-        // Idempotent: nếu đã có payment cho orderId này → trả về luôn
-        var existedPay = paymentRepo.findByProviderAndExternalOrderId("PAYPAL", orderId);
-        if (existedPay.isPresent()) {
-            return existedPay.get().getOrder().getOrderId();
+    public CheckoutResult beginPaypalCheckout(
+            User user,
+            CheckoutAddressDTO address,
+            HttpServletRequest request,
+            HttpSession session) throws Exception {
+        CartSnapshot initialSnapshot = requireCart();
+        String fingerprint = fingerprint(initialSnapshot);
+
+        double exchangeRate = exchangeRateService.getVNDExchangeRate();
+        if (exchangeRate <= 0) {
+            throw new IllegalStateException("Tỷ giá thanh toán không hợp lệ");
         }
+        BigDecimal usdAmount = BigDecimal
+                .valueOf(initialSnapshot.totalAmount() / exchangeRate)
+                .setScale(2, RoundingMode.HALF_UP);
 
-        // Capture (thu tiền thật)
-        var cap = paypalV2.captureOrder(orderId); // COMPLETED, có captureId + payerEmail
-
-        // Lấy snapshot đã lưu
-        Order draft = (Order) session.getAttribute(DRAFT_KEY);
-        if (draft == null) draft = new Order();
-
-        double totalVnd = cart.getAmount();
-        Double rate = (Double) session.getAttribute("exchangeRate");
-        Double usdAmount = (Double) session.getAttribute("usdAmount");
-        if (rate == null || usdAmount == null) {
-            rate = exchangeRateService.getVNDExchangeRate();
-            usdAmount = BigDecimal.valueOf(totalVnd / rate).setScale(2, RoundingMode.HALF_UP).doubleValue();
+        String baseUrl = Utils.getBaseURL(request);
+        if (!baseUrl.endsWith("/")) {
+            baseUrl += "/";
         }
+        var external = paypalV2.createOrder(
+                usdAmount,
+                "USD",
+                baseUrl + "pay/success",
+                baseUrl + "pay/cancel");
 
-        // ====== LƯU captureId vào đơn (trực tiếp qua trường public của cap) ======
-        draft.setPaypalCaptureId(cap.captureId);
-
-        // Ghi Order (PAID)
-        draft.setUser(user);
-        draft.setOrderDate(new Date());
-        draft.setStatus(2); // 2 = ĐÃ THANH TOÁN
-        draft.setAmount(totalVnd);
-        orderRepository.save(draft);
-
-        // Ghi chi tiết + trừ kho an toàn
-        for (CartItem ci : cart.getCartItems()) {
-            OrderDetail od = new OrderDetail();
-            od.setOrder(draft);
-            od.setProduct(ci.getProduct());
-            od.setQuantity(ci.getQuantity());
-            od.setPrice(ci.getProduct().getPrice());
-            orderDetailRepository.save(od);
-
-            int updated = productRepository.decreaseStock(ci.getProduct().getProductId(), ci.getQuantity());
-            if (updated == 0) {
-                throw new IllegalStateException("Không đủ tồn kho cho productId=" + ci.getProduct().getProductId());
+        CheckoutResult result = inTransaction(() -> {
+            User lockedUser = lockUser(user);
+            CartSnapshot currentSnapshot = requireCart();
+            if (!fingerprint.equals(fingerprint(currentSnapshot))) {
+                throw new CartChangedDuringCheckoutException();
             }
+
+            Order order = reserveInventoryAndCreateOrder(
+                    lockedUser,
+                    address,
+                    OrderStatus.AWAITING_PAYMENT,
+                    currentSnapshot);
+
+            OrderPayment payment = new OrderPayment();
+            payment.setOrder(order);
+            payment.setProvider(PAYPAL);
+            payment.setMethod("PAYPAL");
+            payment.setExternalOrderId(external.orderId);
+            payment.setCurrency("USD");
+            payment.setAmount(usdAmount);
+            payment.setExchangeRate(BigDecimal.valueOf(exchangeRate));
+            payment.setStatus("PENDING");
+            payment.setCreatedAt(new Date());
+            paymentRepository.save(payment);
+
+            cart.clear();
+            return new CheckoutResult(
+                    order.getOrderId(),
+                    order.getOrderStatus(),
+                    PAYPAL,
+                    external.approveUrl,
+                    external.orderId);
+        });
+        cleanupSession(session);
+        return result;
+    }
+
+    public CheckoutResult finalizePaypalV2(
+            User user,
+            String externalOrderId,
+            HttpSession session) throws Exception {
+        PaymentSnapshot beforeCapture = paymentSnapshotForUser(
+                user,
+                externalOrderId);
+        if ("COMPLETED".equalsIgnoreCase(beforeCapture.paymentStatus())) {
+            Order order = orderService.findOwnedById(
+                    beforeCapture.orderId(),
+                    user.getUserId());
+            return paypalResult(order, externalOrderId);
+        }
+        if (!"PENDING".equalsIgnoreCase(beforeCapture.paymentStatus())) {
+            throw new InvalidOrderStateException(
+                    "Thanh toán PayPal không còn ở trạng thái chờ capture",
+                    beforeCapture.orderStatus());
         }
 
-        // Ghi bản ghi thanh toán (order_payments)
-        OrderPayment pay = new OrderPayment();
-        pay.setOrder(draft);
-        pay.setProvider("PAYPAL");
-        pay.setMethod("PAYPAL_BALANCE"); // optional
-        pay.setExternalOrderId(orderId);
-        pay.setExternalCaptureId(cap.captureId);
-        pay.setCurrency("USD");
-        pay.setAmount(BigDecimal.valueOf(usdAmount));
-        pay.setExchangeRate(BigDecimal.valueOf(rate));
-        pay.setPayerEmail(cap.payerEmail);
-        pay.setStatus("COMPLETED");
-        pay.setPaymentTime(new Date());
-        paymentRepo.save(pay);
+        var capture = paypalV2.captureOrder(externalOrderId);
+        CheckoutResult result = inTransaction(() -> {
+            Order order = orderRepository.findOwnedByIdForUpdate(
+                            beforeCapture.orderId(),
+                            user.getUserId())
+                    .orElseThrow(() -> new OrderNotFoundException(
+                            beforeCapture.orderId()));
+            OrderPayment payment = paymentRepository.findByExternalOrderIdForUpdate(
+                            PAYPAL,
+                            externalOrderId)
+                    .orElseThrow(() -> new OrderNotFoundException(
+                            beforeCapture.orderId()));
 
-        // Email (không rollback đơn nếu lỗi)
-        try {
-            orderConfirmationMailService.send(
-                    user.getEmail(),
-                    "Book-Shop Xác Nhận Đơn hàng",
-                    "CONFIRM",
-                    cart.getCartItems(),
-                    totalVnd,
-                    draft
-            );
-        } catch (MessagingException ignore) {}
+            if ("COMPLETED".equalsIgnoreCase(payment.getStatus())) {
+                return paypalResult(order, externalOrderId);
+            }
+            if (order.getOrderStatus() != OrderStatus.AWAITING_PAYMENT) {
+                throw new InvalidOrderStateException(
+                        "Đơn hàng không còn chờ thanh toán PayPal",
+                        order.getOrderStatus());
+            }
 
-        // Clear session/cart
-        cart.clear();
+            order.setOrderStatus(OrderStatus.COMPLETED);
+            order.setPaypalCaptureId(capture.captureId);
+            orderRepository.save(order);
+
+            payment.setExternalCaptureId(capture.captureId);
+            payment.setPayerEmail(capture.payerEmail);
+            payment.setStatus("COMPLETED");
+            payment.setPaymentTime(new Date());
+            payment.setUpdatedAt(new Date());
+            paymentRepository.save(payment);
+
+            CartSnapshot purchasedItems = snapshotFromOrder(order);
+            scheduleConfirmationEmail(order.getUser(), order, purchasedItems);
+            return paypalResult(order, externalOrderId);
+        });
+        cleanupSession(session);
+        return result;
+    }
+
+    public CheckoutResult cancelPaypalCheckout(
+            User user,
+            String externalOrderId,
+            HttpSession session) {
+        PaymentSnapshot payment = paymentSnapshotForUser(user, externalOrderId);
+        Order cancelled = orderService.cancelOwned(
+                payment.orderId(),
+                user.getUserId());
+        cleanupSession(session);
+        return new CheckoutResult(
+                cancelled.getOrderId(),
+                cancelled.getOrderStatus(),
+                PAYPAL,
+                null,
+                externalOrderId);
+    }
+
+    private Order reserveInventoryAndCreateOrder(
+            User user,
+            CheckoutAddressDTO address,
+            OrderStatus status,
+            CartSnapshot snapshot) {
+        Order order = new Order();
+        order.setOrderDate(new Date());
+        order.setOrderStatus(status);
+        order.setAmount(snapshot.totalAmount());
+        order.setUser(user);
+        order.setAddress(address.getAddress().trim());
+        order.setPhone(address.getPhone().trim());
+        order.setNote(address.getNote() == null ? null : address.getNote().trim());
+        orderRepository.save(order);
+
+        for (CartItem item : snapshot.items()) {
+            Product product = item.getProduct();
+            int updated = productRepository.decreaseStock(
+                    product.getProductId(),
+                    item.getQuantity());
+            if (updated == 0) {
+                Product current = productRepository.findById(product.getProductId())
+                        .orElseThrow(() -> new ProductUnavailableException(
+                                product.getProductId()));
+                if (!Boolean.TRUE.equals(current.getStatus())) {
+                    throw new ProductUnavailableException(product.getProductId());
+                }
+                throw new InsufficientStockException(
+                        product.getProductId(),
+                        item.getQuantity(),
+                        Math.max(0, current.getQuantity()));
+            }
+
+            OrderDetail detail = new OrderDetail();
+            detail.setOrder(order);
+            detail.setProduct(product);
+            detail.setQuantity(item.getQuantity());
+            detail.setPrice(item.getUnitPrice());
+            orderDetailRepository.save(detail);
+        }
+        return order;
+    }
+
+    private PaymentSnapshot paymentSnapshotForUser(
+            User user,
+            String externalOrderId) {
+        if (externalOrderId == null || externalOrderId.isBlank()) {
+            throw new OrderNotFoundException(null);
+        }
+        return inTransaction(() -> {
+            OrderPayment payment = paymentRepository.findByProviderAndExternalOrderId(
+                            PAYPAL,
+                            externalOrderId)
+                    .orElseThrow(() -> new OrderNotFoundException(null));
+            Order order = payment.getOrder();
+            if (order.getUser() == null
+                    || !Objects.equals(
+                            order.getUser().getUserId(),
+                            user.getUserId())) {
+                throw new OrderNotFoundException(order.getOrderId());
+            }
+            return new PaymentSnapshot(
+                    order.getOrderId(),
+                    order.getOrderStatus(),
+                    payment.getStatus());
+        });
+    }
+
+    private CartSnapshot snapshotFromOrder(Order order) {
+        List<CartItem> items = orderDetailRepository.findByOrderId(
+                        order.getOrderId())
+                .stream()
+                .map(detail -> {
+                    CartItem item = new CartItem();
+                    item.setId(detail.getProduct().getProductId());
+                    item.setName(detail.getProduct().getProductName());
+                    item.setProduct(detail.getProduct());
+                    item.setQuantity(detail.getQuantity());
+                    item.setUnitPrice(detail.getPrice());
+                    return item;
+                })
+                .toList();
+        int totalQuantity = items.stream()
+                .mapToInt(CartItem::getQuantity)
+                .sum();
+        return new CartSnapshot(
+                items,
+                items.size(),
+                totalQuantity,
+                order.getAmount());
+    }
+
+    private User lockUser(User user) {
+        if (user == null || user.getUserId() == null) {
+            throw new IllegalStateException("Người dùng không tồn tại");
+        }
+        return userRepository.findByIdForUpdate(user.getUserId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Người dùng không tồn tại"));
+    }
+
+    private CartSnapshot requireCart() {
+        CartSnapshot snapshot = cart.getSnapshot();
+        if (snapshot.items().isEmpty() || snapshot.totalQuantity() == 0) {
+            throw new EmptyCartException();
+        }
+        return snapshot;
+    }
+
+    private String fingerprint(CartSnapshot snapshot) {
+        return snapshot.items().stream()
+                .sorted(Comparator.comparing(CartItem::getId))
+                .map(item -> item.getId()
+                        + ":" + item.getQuantity()
+                        + ":" + BigDecimal.valueOf(item.getUnitPrice())
+                                .setScale(2, RoundingMode.HALF_UP))
+                .reduce((left, right) -> left + "|" + right)
+                .orElse("");
+    }
+
+    private CheckoutResult paypalResult(Order order, String externalOrderId) {
+        return new CheckoutResult(
+                order.getOrderId(),
+                order.getOrderStatus(),
+                PAYPAL,
+                null,
+                externalOrderId);
+    }
+
+    private void scheduleConfirmationEmail(
+            User user,
+            Order order,
+            CartSnapshot snapshot) {
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            orderConfirmationMailService.send(
+                                    user.getEmail(),
+                                    "Book-Shop Xác Nhận Đơn hàng",
+                                    "CONFIRM",
+                                    snapshot.items(),
+                                    snapshot.totalAmount(),
+                                    order);
+                        } catch (MessagingException ignored) {
+                            // Email failure must never roll back a committed order.
+                        }
+                    }
+                });
+    }
+
+    private void cleanupSession(HttpSession session) {
+        if (session == null) {
+            return;
+        }
         session.removeAttribute("cartItems");
-        session.removeAttribute(DRAFT_KEY);
+        session.removeAttribute("orderDraft");
         session.removeAttribute("exchangeRate");
         session.removeAttribute("usdAmount");
         session.removeAttribute("orderId_pp_hint");
-
-        return draft.getOrderId();
     }
 
-    /* ==================== COD giữ nguyên ==================== */
-
-    @Transactional
-    public Long placeOrderCOD(User user, CheckoutAddressDTO dto, HttpSession session) throws MessagingException {
-        Order order = createOrderSkeleton(user, dto, 0, cart.getAmount());
-        persistOrderDetailsAndDecreaseStockOrThrow(order);
-        afterPersistSuccess(user, order, session);
-        return order.getOrderId();
+    private <T> T inTransaction(TransactionWork<T> work) {
+        T result = new TransactionTemplate(transactionManager)
+                .execute(status -> work.execute());
+        return Objects.requireNonNull(result);
     }
 
-    private void afterPersistSuccess(User user, Order order, HttpSession session) throws MessagingException {
-        Collection<CartItem> items = cart.getCartItems();
-        double total = cart.getAmount();
-
-        orderConfirmationMailService.send(
-                user.getEmail(),
-                "Book-Shop Xác Nhận Đơn hàng",
-                "CONFIRM",
-                items,
-                total,
-                order
-        );
-
-        cart.clear();
-        session.removeAttribute("cartItems");
-        session.removeAttribute(DRAFT_KEY);
+    @FunctionalInterface
+    private interface TransactionWork<T> {
+        T execute();
     }
 
-    private Order createOrderSkeleton(User user, CheckoutAddressDTO dto, int status, double total) {
-        Order order = new Order();
-        order.setOrderDate(new Date());
-        order.setStatus(status);
-        order.setAmount(total);
-        order.setUser(user);
-        order.setAddress(dto.getAddress());
-        order.setPhone(dto.getPhone());
-        return orderRepository.save(order);
-    }
-
-    private void persistOrderDetailsAndDecreaseStockOrThrow(Order order) {
-        for (CartItem ci : cart.getCartItems()) {
-            OrderDetail od = new OrderDetail();
-            od.setQuantity(ci.getQuantity());
-            od.setOrder(order);
-            od.setProduct(ci.getProduct());
-            od.setPrice(ci.getProduct().getPrice());
-            orderDetailRepository.save(od);
-
-            int updated = productRepository.decreaseStock(
-                    ci.getProduct().getProductId(), ci.getQuantity());
-            if (updated == 0) {
-                throw new IllegalStateException(
-                        "Không đủ tồn kho cho productId=" + ci.getProduct().getProductId());
-            }
-        }
-    }
-
-    private Order draftFrom(CheckoutAddressDTO dto) {
-        Order o = new Order();
-        o.setAddress(dto.getAddress());
-        o.setPhone(dto.getPhone());
-        return o;
+    private record PaymentSnapshot(
+            Long orderId,
+            OrderStatus orderStatus,
+            String paymentStatus) {
     }
 }

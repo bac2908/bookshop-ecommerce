@@ -73,7 +73,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
     @Query("UPDATE Product p SET p.quantity = p.quantity - :qty " +
-            "WHERE p.productId = :productId AND p.quantity >= :qty")
+            "WHERE p.productId = :productId AND p.status = true AND p.quantity >= :qty")
     int decreaseStock(@Param("productId") Long productId, @Param("qty") int qty);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)

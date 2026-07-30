@@ -85,7 +85,7 @@ public class OrderController {
 
     @PostMapping("/order/delivered/{order_id}")
     public String delivered(@PathVariable("order_id") Long id) {
-        orderService.deliveredAndDecreaseStock(id);
+        orderService.complete(id);
         return "redirect:/admin/orders";
     }
 

@@ -51,7 +51,9 @@
 
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table id="report-table" class="display table table-striped table-hover">
+                                <table id="report-table"
+                                       class="display table table-striped table-hover"
+                                       th:attr="data-report-grouping=${reportGrouping}">
                                     <thead>
                                     <tr>
                                         <th>#</th>
@@ -64,15 +66,15 @@
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    <!-- listReportCommon: List<Object[]>: [group, qty, sum, avg, min, max] -->
+                                    <!-- DTO ổn định; JavaScript có thể làm mới từ API giai đoạn 4. -->
                                     <tr th:each="item, i : ${listReportCommon}">
                                         <td th:text="${i.index + 1}">1</td>
-                                        <td th:text="${item[0]}">Group</td>
-                                        <td th:text="${item[1]}">0</td>
-                                        <td th:text="${#numbers.formatDecimal(item[2],1,'DEFAULT',0,'DEFAULT')} + ' đ'">0 đ</td>
-                                        <td th:text="${#numbers.formatDecimal(item[3],1,'DEFAULT',0,'DEFAULT')} + ' đ'">0 đ</td>
-                                        <td th:text="${#numbers.formatDecimal(item[4],1,'DEFAULT',0,'DEFAULT')} + ' đ'">0 đ</td>
-                                        <td th:text="${#numbers.formatDecimal(item[5],1,'DEFAULT',0,'DEFAULT')} + ' đ'">0 đ</td>
+                                        <td th:text="${item.group}">Group</td>
+                                        <td th:text="${item.quantity}">0</td>
+                                        <td th:text="${#numbers.formatDecimal(item.revenue,1,'DEFAULT',0,'DEFAULT')} + ' đ'">0 đ</td>
+                                        <td th:text="${#numbers.formatDecimal(item.averagePrice,1,'DEFAULT',0,'DEFAULT')} + ' đ'">0 đ</td>
+                                        <td th:text="${#numbers.formatDecimal(item.minimumPrice,1,'DEFAULT',0,'DEFAULT')} + ' đ'">0 đ</td>
+                                        <td th:text="${#numbers.formatDecimal(item.maximumPrice,1,'DEFAULT',0,'DEFAULT')} + ' đ'">0 đ</td>
                                     </tr>
                                     </tbody>
                                     <tfoot>
@@ -130,7 +132,7 @@
     $(function () {
         $('#report-table').DataTable({
             pageLength: 10,
-            order: [[2, 'desc']],
+            order: [ [2, 'desc'] ],
             language: {
                 sSearch: "Tìm:",
                 sLengthMenu: "Hiển thị _MENU_ dòng",

@@ -33,7 +33,12 @@ public class FavoriteController {
                              @RequestParam(value = "redirect", defaultValue = "/products") String redirect,
                              RedirectAttributes ra) {
         if (user == null) return "redirect:/login";
-        boolean ok = favoriteService.add(user.getUserId(), productId);
+        boolean ok;
+        try {
+            ok = favoriteService.add(user.getUserId(), productId);
+        } catch (RuntimeException exception) {
+            ok = false;
+        }
         if (!ok) {
             ra.addFlashAttribute("message", "Không thể thêm yêu thích.");
             ra.addFlashAttribute("alertType", "danger");

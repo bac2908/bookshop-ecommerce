@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,19 +20,23 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "favorites")
+@Table(
+		name = "favorites",
+		uniqueConstraints = @UniqueConstraint(
+				name = "ux_favorite_user_product",
+				columnNames = {"user_id", "product_id"}))
 public class Favorite implements Serializable {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long favoriteId;
 
-	@ManyToOne()
-	@JoinColumn(name = "userId")
+	@ManyToOne(optional = false)
+	@JoinColumn(name = "user_id", nullable = false)
 	private User user;
 
-	@ManyToOne()
-	@JoinColumn(name = "productId")
+	@ManyToOne(optional = false)
+	@JoinColumn(name = "product_id", nullable = false)
 	private Product product;
 
 }

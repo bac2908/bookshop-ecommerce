@@ -9,8 +9,7 @@ import vn.fs.backend.application.dto.SessionUser;
 import vn.fs.backend.domain.model.User;
 import vn.fs.backend.infrastructure.persistence.UserRepository;
 import vn.fs.backend.security.IpUtils;
-import vn.fs.backend.application.service.IpLockService;
-import vn.fs.backend.application.service.UserLockService;
+import vn.fs.backend.application.service.LoginAttemptService;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,8 +19,7 @@ import java.io.IOException;
 @Component
 public class AuthenticationSuccessHandler extends SavedRequestAwareAuthenticationSuccessHandler {
 
-    @Autowired private UserLockService userLockService;
-    @Autowired private IpLockService   ipLockService;
+    @Autowired private LoginAttemptService loginAttemptService;
 
     // Lấy user theo username/email để đẩy vào session
     @Autowired private UserRepository  userRepository;
@@ -33,8 +31,7 @@ public class AuthenticationSuccessHandler extends SavedRequestAwareAuthenticatio
             throws IOException, ServletException {
 
         // Reset counters khi login thành công
-        userLockService.onSuccess(auth.getName());
-        ipLockService.onSuccess(IpUtils.getClientIp(req));
+        loginAttemptService.onSuccess(auth.getName(), IpUtils.getClientIp(req));
 
         // Đặt "customer" vào session dưới dạng DTO an toàn
         String loginId = auth.getName();

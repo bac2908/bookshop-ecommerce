@@ -1,7 +1,6 @@
 package vn.fs.backend.presentation.storefront;
 
 import java.security.Principal;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -25,8 +24,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import vn.fs.backend.domain.model.Order;
 import vn.fs.backend.domain.model.OrderDetail;
 import vn.fs.backend.domain.model.User;
-import vn.fs.backend.infrastructure.persistence.OrderDetailRepository;
-import vn.fs.backend.infrastructure.persistence.OrderRepository;
+import vn.fs.backend.application.error.InvalidOrderStateException;
+import vn.fs.backend.application.error.OrderNotFoundException;
+import vn.fs.backend.application.service.OrderService;
 import vn.fs.backend.infrastructure.persistence.UserRepository;
 import vn.fs.backend.application.service.UserDetailService;
 
@@ -34,8 +34,7 @@ import vn.fs.backend.application.service.UserDetailService;
 public class ProfileController {
 
     @Autowired UserRepository userRepository;
-    @Autowired OrderRepository orderRepository;
-    @Autowired OrderDetailRepository orderDetailRepository;
+    @Autowired OrderService orderService;
 
     @Autowired UserDetailService userDetailService; // để load lại UserDetails sau khi đổi username
 
@@ -81,7 +80,9 @@ public class ProfileController {
         int currentPage = page.orElse(1);
         int pageSize = size.orElse(6);
 
-        Page<Order> orderPage = findPaginated(PageRequest.of(currentPage - 1, pageSize), current.getUserId());
+        Page<Order> orderPage = orderService.listByUser(
+                current.getUserId(),
+                PageRequest.of(currentPage - 1, pageSize));
         int totalPages = orderPage.getTotalPages();
         if (totalPages > 0) {
             List<Integer> pageNumbers = IntStream.rangeClosed(1, totalPages).boxed().collect(Collectors.toList());
@@ -90,26 +91,6 @@ public class ProfileController {
 
         model.addAttribute("orderByUser", orderPage);
         return "storefront/pages/profile";
-    }
-
-    public Page<Order> findPaginated(Pageable pageable, Long userId) {
-        List<Order> orderList = (userId == null)
-                ? Collections.emptyList()
-                : orderRepository.findOrderByUserId(userId);
-
-        int pageSize = pageable.getPageSize();
-        int currentPage = pageable.getPageNumber();
-        int startItem = currentPage * pageSize;
-
-        List<Order> list;
-        if (orderList.size() < startItem) {
-            list = Collections.emptyList();
-        } else {
-            int toIndex = Math.min(startItem + pageSize, orderList.size());
-            list = orderList.subList(startItem, toIndex);
-        }
-
-        return new PageImpl<>(list, PageRequest.of(currentPage, pageSize), orderList.size());
     }
 
     @GetMapping("/order/detail/{order_id}")
@@ -121,16 +102,15 @@ public class ProfileController {
             return new ModelAndView("redirect:/login");
         }
 
-        Optional<Order> order = orderRepository.findById(id);
-        if (order.isEmpty()
-                || order.get().getUser() == null
-                || !current.getUserId().equals(order.get().getUser().getUserId())) {
+        List<OrderDetail> details;
+        try {
+            details = orderService.detailsOfOwned(id, current.getUserId());
+        } catch (OrderNotFoundException exception) {
             return new ModelAndView("redirect:/profile");
         }
 
         model.addAttribute("user", current);
-        List<OrderDetail> listO = orderDetailRepository.findByOrderId(id);
-        model.addAttribute("orderDetail", listO);
+        model.addAttribute("orderDetail", details);
         return new ModelAndView("storefront/pages/order-detail");
     }
 
@@ -144,22 +124,14 @@ public class ProfileController {
             return new ModelAndView("redirect:/login", model);
         }
 
-        Optional<Order> o = orderRepository.findById(id);
-        if (o.isEmpty()
-                || o.get().getUser() == null
-                || !current.getUserId().equals(o.get().getUser().getUserId())) {
+        try {
+            orderService.cancelOwned(id, current.getUserId());
+            ra.addFlashAttribute("ok", "Đã hủy đơn hàng.");
+        } catch (OrderNotFoundException exception) {
             ra.addFlashAttribute("err", "Không tìm thấy đơn hàng.");
-            return new ModelAndView("redirect:/profile", model);
+        } catch (InvalidOrderStateException exception) {
+            ra.addFlashAttribute("err", exception.getMessage());
         }
-
-        Order oReal = o.get();
-        if (oReal.getStatus() != 0) {
-            ra.addFlashAttribute("err", "Chỉ có thể hủy đơn đang chờ xác nhận.");
-            return new ModelAndView("redirect:/profile", model);
-        }
-        oReal.setStatus(3);
-        orderRepository.save(oReal);
-        ra.addFlashAttribute("ok", "Đã hủy đơn hàng.");
         return new ModelAndView("redirect:/profile", model);
     }
 

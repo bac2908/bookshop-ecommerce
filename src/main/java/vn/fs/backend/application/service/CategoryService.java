@@ -6,6 +6,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import vn.fs.backend.application.dto.CategoryDTO;
+import vn.fs.backend.application.dto.CatalogVisibilityResult;
+import vn.fs.backend.application.error.CategoryNotFoundException;
+import vn.fs.backend.application.error.DuplicateCategoryNameException;
 import vn.fs.backend.domain.model.Category;
 import vn.fs.backend.infrastructure.persistence.CategoryRepository;
 import vn.fs.backend.infrastructure.persistence.ProductRepository;
@@ -72,6 +75,10 @@ public class CategoryService {
     /* thêm mới category (ảnh nếu có thì promote từ file tạm) */
     @Transactional
     public Category create(CategoryDTO dto, MultipartFile upload) {
+        dto.normalize();
+        if (nameExists(dto.getCategoryName())) {
+            throw new DuplicateCategoryNameException(dto.getCategoryName());
+        }
         // nếu user có upload ảnh mới thì lưu tạm để tránh mất khi validate
         if (upload != null && !upload.isEmpty()) {
             String tmp = image.saveTemp(upload);
@@ -89,7 +96,12 @@ public class CategoryService {
     /* cập nhật category (hỗ trợ đổi ảnh, xóa ảnh cũ nếu đổi) */
     @Transactional
     public Category update(Long id, CategoryDTO dto, MultipartFile upload, String existingImage) {
-        Category c = categoryRepository.findById(id).orElseThrow();
+        Category c = categoryRepository.findById(id)
+                .orElseThrow(() -> new CategoryNotFoundException(id));
+        dto.normalize();
+        if (nameExistsOther(dto.getCategoryName(), id)) {
+            throw new DuplicateCategoryNameException(dto.getCategoryName());
+        }
 
         // nếu upload ảnh mới -> lưu tạm, set vào dto
         if (upload != null && !upload.isEmpty()) {
@@ -104,10 +116,19 @@ public class CategoryService {
 
         String finalName = image.promoteIfTempOrKeep(newName, "cat_");
         String old = c.getCategoryImage();
+        boolean wasActive = Boolean.TRUE.equals(c.getStatus());
 
         apply(dto, c);
         c.setCategoryImage(finalName);
         Category saved = categoryRepository.save(c);
+        boolean isActive = Boolean.TRUE.equals(saved.getStatus());
+        if (wasActive != isActive) {
+            if (isActive) {
+                productRepository.visibleByCategory(id);
+            } else {
+                productRepository.hideByCategory(id);
+            }
+        }
 
         // nếu đổi ảnh thì xóa ảnh cũ (chỉ ảnh "chính", không xóa file tạm)
         if (StringUtils.isNotBlank(finalName) && !StringUtils.equals(finalName, old)) {
@@ -119,35 +140,25 @@ public class CategoryService {
     /* ẩn category + ẩn toàn bộ sản phẩm con; nếu không còn sp tham chiếu thì xóa cứng */
     @Transactional
     public boolean hideAndCascade(Long id) {
-        Category c = categoryRepository.findById(id).orElseThrow();
-
-        // 1) Ẩn hết sản phẩm thuộc category này
-        productRepository.hideByCategory(id);
-
-        // 2) Ẩn category
-        c.setStatus(false);
-        categoryRepository.save(c);
-
-        // 3) nếu không còn sp nào trỏ tới (kể cả ẩn) thì xóa cứng
-        long totalRef = productRepository.countByCategory_CategoryId(id);
-        if (totalRef == 0) {
-            try {
-                image.deleteIfPermanent(c.getCategoryImage()); // xóa ảnh luôn
-                categoryRepository.deleteById(id);
-                return true; // đã xóa cứng
-            } catch (Exception ignore) {
-                // nếu DB vẫn FK đâu đó thì thôi, chỉ ẩn
-            }
-        }
-        return false; // chỉ ẩn
+        setVisibility(id, false);
+        return false;
     }
 
     /* khôi phục category (không tự mở sp con) */
     @Transactional
     public void restore(Long id) {
-        categoryRepository.findById(id).ifPresent(c -> {
-            c.setStatus(true);
-            categoryRepository.save(c);
-        });
+        setVisibility(id, true);
+    }
+
+    @Transactional
+    public CatalogVisibilityResult setVisibility(Long id, boolean active) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new CategoryNotFoundException(id));
+        category.setStatus(active);
+        categoryRepository.save(category);
+        int affected = active
+                ? productRepository.visibleByCategory(id)
+                : productRepository.hideByCategory(id);
+        return new CatalogVisibilityResult(id, active, affected);
     }
 }

@@ -23,5 +23,5 @@ public interface OrderAdminService {
     // đổi trạng thái
     void cancel(Long orderId);    // 3
     void confirm(Long orderId);   // 1
-    void deliveredAndDecreaseStock(Long orderId); // 2 + trừ kho
+    void complete(Long orderId);   // 2; tồn kho đã được giữ lúc checkout
 }

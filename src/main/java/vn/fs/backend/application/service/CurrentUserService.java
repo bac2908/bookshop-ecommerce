@@ -5,6 +5,7 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vn.fs.backend.domain.model.User;
 import vn.fs.backend.infrastructure.persistence.UserRepository;
 
@@ -21,6 +22,16 @@ public class CurrentUserService {
         return userRepository.findByUsernameIgnoreCase(login)
                 .or(() -> userRepository.findByEmailIgnoreCase(login))
                 .or(() -> userRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase(login, login))
+                .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public User findByLogin(String login) {
+        if (login == null || login.isBlank()) {
+            return null;
+        }
+        String normalized = login.trim();
+        return userRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase(normalized, normalized)
                 .orElse(null);
     }
 }

@@ -38,16 +38,23 @@ class GreenyShopApplicationTests {
 	@Test
 	void flywayBaselineMigrationIsApplied() {
 		Integer appliedMigrations = jdbcTemplate.queryForObject(
-				"select count(*) from flyway_schema_history where version = '1' and success = true",
+				"select count(*) from flyway_schema_history where version in ('1', '4', '5', '6') and success = true",
 				Integer.class);
 
-		assertEquals(1, appliedMigrations);
+		assertEquals(4, appliedMigrations);
 	}
 
 	@Test
 	void homePageIsPublicAndRenders() throws Exception {
 		mockMvc.perform(get("/"))
-				.andExpect(status().isOk());
+				.andExpect(status().isOk())
+				.andExpect(result -> assertTrue(
+						result.getResponse().getContentAsString()
+								.contains("/storefront/js/api-client.js")
+						&& result.getResponse().getContentAsString()
+								.contains("/storefront/js/cart-favorite.js")
+						&& result.getResponse().getContentAsString()
+								.contains("/storefront/js/checkout-order.js")));
 	}
 
 	@Test
@@ -94,6 +101,14 @@ class GreenyShopApplicationTests {
 	void stateChangingRequestWithoutCsrfIsRejected() throws Exception {
 		mockMvc.perform(post("/order/cancel/1"))
 				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	@WithMockUser(username = "security-test", roles = "USER")
+	void mvcLogoutStillRedirectsToStorefront() throws Exception {
+		mockMvc.perform(post("/logout").with(csrf()))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrl("/?logout_success"));
 	}
 
 	@Test

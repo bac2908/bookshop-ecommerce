@@ -26,6 +26,7 @@ public class Order implements Serializable {
 	private Double amount;
 	private String address;
 	private String phone;
+	private String note;
 	private int status;
 
 	@OneToMany(mappedBy = "order")
@@ -36,4 +37,13 @@ public class Order implements Serializable {
 	private User user;
     @Column(name = "paypal_capture_id")
     private String paypalCaptureId;
+
+	@Transient
+	public OrderStatus getOrderStatus() {
+		return OrderStatus.fromCode(status);
+	}
+
+	public void setOrderStatus(OrderStatus orderStatus) {
+		this.status = orderStatus.getCode();
+	}
 }

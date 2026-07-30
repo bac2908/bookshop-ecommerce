@@ -1,12 +1,10 @@
 package vn.fs.backend.presentation.support;
 
-import java.util.Collection;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.ui.Model;
 
-import vn.fs.backend.domain.model.CartItem;
+import vn.fs.backend.application.dto.CartSnapshot;
 import vn.fs.backend.domain.model.User;
 import vn.fs.backend.infrastructure.persistence.CategoryRepository;
 import vn.fs.backend.infrastructure.persistence.FavoriteRepository;
@@ -38,22 +36,18 @@ public class CommonViewDataService {
         int distinct = 0;
         int qtySum = 0;
         double totalPrice = 0.0;
-        Collection<CartItem> cartItems = null;
+        CartSnapshot cart = CartSnapshot.empty();
         try {
-            cartItems = shoppingCartService.getCartItems();
-            totalPrice = shoppingCartService.getAmount();
-            if (cartItems != null) {
-                distinct = cartItems.size();
-                for (CartItem it : cartItems) {
-                    if (it != null) qtySum += it.getQuantity();
-                }
-            }
+            cart = shoppingCartService.getSnapshot();
+            distinct = cart.distinctItems();
+            qtySum = cart.totalQuantity();
+            totalPrice = cart.totalAmount();
         } catch (Exception ignored) { }
         // giữ tên cũ để không vỡ view
         model.addAttribute("totalCartItems", distinct);
         model.addAttribute("totalCartDistinct", distinct);
         model.addAttribute("totalCartQtySum", qtySum);
-        model.addAttribute("cartItems", cartItems);
+        model.addAttribute("cartItems", cart.items());
         model.addAttribute("totalPrice", totalPrice);
 
         // Navbar: dùng phiên bản đã lọc ACTIVE + có hàng

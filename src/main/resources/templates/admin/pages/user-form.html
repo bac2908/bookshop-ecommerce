@@ -79,7 +79,12 @@
                                 <span class="soft">ID: <strong th:text="${target.userId}">1</strong></span>
                             </div>
                             <div class="card-body">
-                                <form th:action="@{'/admin/customers/edit/' + ${target.userId}}" method="post" class="needs-validation" novalidate>
+                                <form th:action="@{'/admin/customers/edit/' + ${target.userId}}"
+                                      method="post"
+                                      class="needs-validation"
+                                      data-admin-user-access-form
+                                      th:attr="data-user-id=${target.userId}"
+                                      novalidate>
                                     <!-- CSRF (safe) -->
                                     <th:block th:with="csrf=${#request.getAttribute('_csrf')}">
                                         <input type="hidden" th:if="${csrf != null}" th:name="${csrf.parameterName}" th:value="${csrf.token}"/>

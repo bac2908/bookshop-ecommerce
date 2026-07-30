@@ -5,6 +5,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.fs.backend.application.dto.NxbDTO;
+import vn.fs.backend.application.dto.CatalogVisibilityResult;
+import vn.fs.backend.application.error.DuplicatePublisherNameException;
+import vn.fs.backend.application.error.PublisherNotFoundException;
 import vn.fs.backend.domain.model.NXB;
 import vn.fs.backend.infrastructure.persistence.NxbRepository;
 import vn.fs.backend.infrastructure.persistence.ProductRepository;
@@ -68,6 +71,10 @@ public class NxbService {
     // Thêm mới NXB
     @Transactional
     public NXB create(NxbDTO dto) {
+        dto.normalize();
+        if (nameExists(dto.getName())) {
+            throw new DuplicatePublisherNameException(dto.getName());
+        }
         NXB entity = new NXB();
         apply(dto, entity);
         return nxbRepository.save(entity);
@@ -76,9 +83,24 @@ public class NxbService {
     // Cập nhật NXB
     @Transactional
     public NXB update(Long id, NxbDTO dto) {
-        NXB entity = nxbRepository.findById(id).orElseThrow();
+        NXB entity = nxbRepository.findById(id)
+                .orElseThrow(() -> new PublisherNotFoundException(id));
+        dto.normalize();
+        if (nameExistsOther(dto.getName(), id)) {
+            throw new DuplicatePublisherNameException(dto.getName());
+        }
+        boolean wasActive = Boolean.TRUE.equals(entity.getStatus());
         apply(dto, entity);
-        return nxbRepository.save(entity);
+        NXB saved = nxbRepository.save(entity);
+        boolean isActive = Boolean.TRUE.equals(saved.getStatus());
+        if (wasActive != isActive) {
+            if (isActive) {
+                productRepository.visibleByNxb(id);
+            } else {
+                productRepository.hideByNxb(id);
+            }
+        }
+        return saved;
     }
 
     // Ẩn NXB và Ẩn toàn bộ sản phẩm thuộc NXB đó.
@@ -86,34 +108,25 @@ public class NxbService {
     // Trả về true nếu đã xóa cứng; false nếu chỉ ẩn.
     @Transactional
     public boolean hideAndCascade(Long id) {
-        NXB nxb = nxbRepository.findById(id).orElseThrow();
-
-        // 1) Ẩn tất cả sản phẩm con theo NXB
-        productRepository.hideByNxb(id);
-
-        // 2) Ẩn NXB
-        nxb.setStatus(false);
-        nxbRepository.save(nxb);
-
-        // 3) Không còn sp tham chiếu → xóa cứng
-        long totalRef = productRepository.countByNxb_Id(id);
-        if (totalRef == 0) {
-            try {
-                nxbRepository.deleteById(id);
-                return true;
-            } catch (Exception ignore) {
-                // Nếu DB còn ràng buộc thì thôi, giữ ẩn
-            }
-        }
+        setVisibility(id, false);
         return false;
     }
 
     // Khôi phục NXB (không tự mở sản phẩm con)
     @Transactional
     public void restore(Long id) {
-        nxbRepository.findById(id).ifPresent(n -> {
-            n.setStatus(true);
-            nxbRepository.save(n);
-        });
+        setVisibility(id, true);
+    }
+
+    @Transactional
+    public CatalogVisibilityResult setVisibility(Long id, boolean active) {
+        NXB publisher = nxbRepository.findById(id)
+                .orElseThrow(() -> new PublisherNotFoundException(id));
+        publisher.setStatus(active);
+        nxbRepository.save(publisher);
+        int affected = active
+                ? productRepository.visibleByNxb(id)
+                : productRepository.hideByNxb(id);
+        return new CatalogVisibilityResult(id, active, affected);
     }
 }

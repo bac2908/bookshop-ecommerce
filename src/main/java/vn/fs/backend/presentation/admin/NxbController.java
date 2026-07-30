@@ -9,7 +9,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import vn.fs.backend.application.dto.NxbDTO;
 import vn.fs.backend.domain.model.NXB;
 import vn.fs.backend.application.service.NxbService;
-import vn.fs.backend.application.service.ProductService;
 
 import jakarta.validation.Valid;
 import java.util.Optional;
@@ -20,7 +19,6 @@ import java.util.Optional;
 public class NxbController {
 
     private final NxbService nxbService;
-    private final ProductService productService;
 
     // Trang danh sách NXB
     @GetMapping("/nxbs")
@@ -118,7 +116,6 @@ public class NxbController {
     @PostMapping("/restoreNxb/{id}")
     public String restoreNxb(@PathVariable("id") Long id, RedirectAttributes ra) {
         nxbService.restore(id);
-        productService.restoreByNxb(id);
         ra.addFlashAttribute("message", "Đã HIỂN THỊ lại NXB (sản phẩm đã mở bán lại).");
         ra.addFlashAttribute("alertType", "success");
         return "redirect:/admin/nxbs";

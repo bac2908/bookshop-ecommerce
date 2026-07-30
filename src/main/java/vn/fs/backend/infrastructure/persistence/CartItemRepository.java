@@ -16,6 +16,8 @@ public interface CartItemRepository extends JpaRepository<CartItemEntity, Long> 
 
     Optional<CartItemEntity> findByCartAndProduct(Cart cart, Product product);
 
+    Optional<CartItemEntity> findByCartAndProduct_ProductId(Cart cart, Long productId);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM CartItemEntity i WHERE i.lastTouch < :before")
     int deleteOldItems(@Param("before") Date before);

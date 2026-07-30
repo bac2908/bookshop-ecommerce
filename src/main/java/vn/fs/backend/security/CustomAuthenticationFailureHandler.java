@@ -4,8 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
-import vn.fs.backend.application.service.IpLockService;
-import vn.fs.backend.application.service.UserLockService;
+import vn.fs.backend.application.service.LoginAttemptService;
 
 import jakarta.servlet.ServletException;               // <--- chắc chắn import javax (Boot 2.x)
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,10 +15,7 @@ import java.io.IOException;
 public class CustomAuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {
 
     @Autowired
-    private UserLockService userLockService;
-
-    @Autowired
-    private IpLockService ipLockService;
+    private LoginAttemptService loginAttemptService;
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request,
@@ -30,10 +26,7 @@ public class CustomAuthenticationFailureHandler extends SimpleUrlAuthenticationF
         String loginId = request.getParameter("username");
         String ip = IpUtils.getClientIp(request);
 
-        if (loginId != null && !loginId.trim().isEmpty()) {
-            userLockService.onFailure(loginId.trim());
-        }
-        ipLockService.onFailure(ip);
+        loginAttemptService.onFailure(loginId, ip);
 
         super.setDefaultFailureUrl("/login?error");
         super.onAuthenticationFailure(request, response, exception);

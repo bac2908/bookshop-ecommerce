@@ -11,7 +11,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import vn.fs.backend.application.error.InvalidAccessChangeException;
 import vn.fs.backend.domain.model.Role;
 import vn.fs.backend.domain.model.User;
 import vn.fs.backend.application.service.UserAdminService;
@@ -63,7 +65,9 @@ public class UserController {
     @PostMapping("/edit/{id}")
     public String update(@PathVariable("id") Long id,
                          @RequestParam(value = "roleIds", required = false) List<Long> roleIds,
-                         @RequestParam(value = "enabled", required = false) String enabled // "on" nếu tick
+                         @RequestParam(value = "enabled", required = false) String enabled,
+                         Principal principal,
+                         RedirectAttributes redirectAttributes
     ) {
         User target = userAdminService.getById(id);
         if (target == null) {
@@ -71,7 +75,18 @@ public class UserController {
         }
 
         boolean isEnabled = StringUtils.hasText(enabled);
-        userAdminService.updateRolesAndStatus(id, roleIds, isEnabled);
+        try {
+            userAdminService.updateRolesAndStatus(
+                    id,
+                    roleIds,
+                    isEnabled,
+                    principal.getName());
+        } catch (InvalidAccessChangeException exception) {
+            redirectAttributes.addFlashAttribute(
+                    "flashErr",
+                    exception.getMessage());
+            return "redirect:/admin/customers/edit/" + id;
+        }
 
         return "redirect:/admin/customers?updated=1";
     }

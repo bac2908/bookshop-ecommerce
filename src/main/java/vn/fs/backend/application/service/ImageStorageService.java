@@ -20,6 +20,14 @@ public class ImageStorageService {
 
     public static final String TMP_PREFIX = "__tmp__";
 
+    public boolean isValidUpload(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return true;
+        }
+        String original = StringUtils.defaultString(file.getOriginalFilename());
+        return isAllowed(getExt(original));
+    }
+
     /** Lưu file tạm để không mất khi form lỗi; trả về tên file tạm hoặc null nếu invalid */
     public String saveTemp(MultipartFile file) {
         try {

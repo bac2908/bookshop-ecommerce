@@ -4,18 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import vn.fs.backend.application.dto.DailyPoint;
 import vn.fs.backend.application.dto.DashboardSummary;
-import vn.fs.backend.domain.model.User;
-import vn.fs.backend.infrastructure.persistence.OrderRepository;
-import vn.fs.backend.infrastructure.persistence.UserRepository;
 import vn.fs.backend.application.service.DashboardService;
 
-import java.security.Principal;
 import java.text.NumberFormat;
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -24,25 +18,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class IndexAdminController {
 
-    private final UserRepository userRepository;
-    private final OrderRepository orderRepository;
     private final DashboardService dashboardService;
-
-    @ModelAttribute("user")
-    public User user(Model model, Principal principal, User user) {
-        if (principal != null) {
-            model.addAttribute("user", new User());
-            user = userRepository.findByEmail(principal.getName());
-            model.addAttribute("user", user);
-        }
-        return user;
-    }
 
     @GetMapping("/home")
     public String index(Model model) {
         final int DAYS = 7;
-        final LocalDate from = LocalDate.now().minusDays(DAYS - 1);
-
         // ---- Summary (7 ngày) ----
         DashboardSummary s = dashboardService.loadSummary(DAYS);
 
@@ -62,20 +42,13 @@ public class IndexAdminController {
         model.addAttribute("incomeValues", incomeValues);
 
         // ---- Orders count series (line “Daily Sales”) ----
-        List<Object[]> rows = orderRepository.ordersCountByDateFrom(from);
-        Map<LocalDate, Long> ordersMap = new HashMap<>();
-        for (Object[] r : rows) {
-            LocalDate d = ((java.sql.Date) r[0]).toLocalDate();
-            long cnt = ((Number) r[1]).longValue();
-            ordersMap.put(d, cnt);
-        }
-        List<String> ordersLabels = new ArrayList<>(DAYS);
-        List<Long>   ordersValues = new ArrayList<>(DAYS);
-        for (int i = 0; i < DAYS; i++) {
-            LocalDate d = from.plusDays(i);
-            ordersLabels.add(d.toString());
-            ordersValues.add(ordersMap.getOrDefault(d, 0L));
-        }
+        List<DailyPoint> orders = dashboardService.orderSeries(DAYS);
+        List<String> ordersLabels = orders.stream()
+                .map(point -> point.getDate().toString())
+                .toList();
+        List<Long> ordersValues = orders.stream()
+                .map(point -> point.getValue().longValue())
+                .toList();
         model.addAttribute("ordersLabels", ordersLabels);
         model.addAttribute("ordersValues", ordersValues);
 

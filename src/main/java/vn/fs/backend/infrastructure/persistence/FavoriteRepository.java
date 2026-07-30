@@ -32,6 +32,7 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
 
     // method-name tiện dùng trong service
     List<Favorite> findByUser_UserId(Long userId);
+    long countByUser_UserId(Long userId);
     boolean existsByUser_UserIdAndProduct_ProductId(Long userId, Long productId);
     Optional<Favorite> findByUser_UserIdAndProduct_ProductId(Long userId, Long productId);
     void deleteByUser_UserIdAndProduct_ProductId(Long userId, Long productId);
