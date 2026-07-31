@@ -77,9 +77,7 @@
                                             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                                         </div>
                                         <div class="modal-body">
-                                            <form th:action="@{/admin/addNxb}"
-                                                  th:object="${nxb}"
-                                                  method="post"
+                                            <form th:object="${nxb}"
                                                   data-admin-publisher-create>
                                                 <div class="row">
                                                     <div class="col-sm-12">
@@ -167,9 +165,7 @@
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                                                                    <form th:action="@{/admin/deleteNxb/{id}(id=${item.id})}"
-                                                                          method="post"
-                                                                          data-admin-publisher-visibility
+                                                                    <form data-admin-publisher-visibility
                                                                           data-active="false"
                                                                           th:attr="data-publisher-id=${item.id}">
                                                                         <button class="btn btn-danger" type="submit">Xác nhận Ẩn</button>
@@ -205,9 +201,7 @@
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                                                                    <form th:action="@{/admin/restoreNxb/{id}(id=${item.id})}"
-                                                                          method="post"
-                                                                          data-admin-publisher-visibility
+                                                                    <form data-admin-publisher-visibility
                                                                           data-active="true"
                                                                           th:attr="data-publisher-id=${item.id}">
                                                                         <button class="btn btn-success" type="submit">Xác nhận</button>
@@ -240,7 +234,7 @@
     </div>
 </div>
 
-<script src="/admin-assets/js/core/jquery.3.2.1.min.js"></script>
+<script src="/storefront/vendor/bootstrap/jquery-3.6.0.min.js"></script>
 <script src="/admin-assets/js/core/popper.min.js"></script>
 <script src="/admin-assets/js/core/bootstrap.min.js"></script>
 <script src="/admin-assets/js/plugin/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>

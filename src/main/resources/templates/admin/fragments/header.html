@@ -184,7 +184,7 @@
                                 <li>
                                     <a class="dropdown-item" href="javascript:void(0);">Administrator</a>
                                     <div class="dropdown-divider"></div>
-                                    <form th:if="${user != null}" th:action="@{/logout}" method="post">
+                                    <form th:if="${user != null}" data-api-logout>
                                         <button class="dropdown-item" type="submit">Đăng xuất</button>
                                     </form>
                                     <a class="dropdown-item" th:if="${user == null}" th:href="@{/login}">Đăng nhập</a>

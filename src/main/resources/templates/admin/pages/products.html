@@ -113,7 +113,7 @@
                                             </button>
                                         </div>
                                         <div class="modal-body">
-                                            <form th:action="@{/admin/addProduct}" th:object="${product}" method="post" enctype="multipart/form-data">
+                                            <form th:object="${product}" data-admin-product-create>
                                                 <div class="row">
                                                     <div class="col-sm-12">
                                                         <img class="thumb-add"
@@ -290,7 +290,8 @@
                                                                     <span aria-hidden="true">&times;</span>
                                                                 </button>
                                                             </div>
-                                                            <form th:action="@{/admin/increaseStock/{id}(id=${item.productId})}" method="post">
+                                                            <form data-admin-product-stock
+                                                                  th:attr="data-product-id=${item.productId}">
                                                                 <div class="modal-body">
                                                                     <p>Sản phẩm: <b th:text="${item.productName}">Tên</b></p>
                                                                     <div class="form-group">
@@ -329,7 +330,9 @@
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                                                                    <form th:action="@{/admin/deleteProduct/{id}(id=${item.productId})}" method="post">
+                                                                    <form data-admin-product-visibility
+                                                                          data-active="false"
+                                                                          th:attr="data-product-id=${item.productId}">
                                                                         <button class="btn btn-danger" type="submit">Xác nhận Ẩn</button>
                                                                     </form>
                                                                 </div>
@@ -360,7 +363,9 @@
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                                                                    <form th:action="@{/admin/restoreProduct/{id}(id=${item.productId})}" method="post">
+                                                                    <form data-admin-product-visibility
+                                                                          data-active="true"
+                                                                          th:attr="data-product-id=${item.productId}">
                                                                         <button class="btn btn-success" type="submit">Xác nhận</button>
                                                                     </form>
                                                                 </div>
@@ -391,7 +396,7 @@
     </div>
 </div>
 
-<script src="/admin-assets/js/core/jquery.3.2.1.min.js"></script>
+<script src="/storefront/vendor/bootstrap/jquery-3.6.0.min.js"></script>
 <script src="/admin-assets/js/core/popper.min.js"></script>
 <script src="/admin-assets/js/core/bootstrap.min.js"></script>
 <script src="/admin-assets/js/plugin/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>

@@ -4,7 +4,8 @@
 
 ```text
 Browser
-  -> presentation (controller, validation HTTP, model/view)
+  -> presentation/api/v1 (mutation, JSON/multipart, validation HTTP)
+  -> presentation/{storefront|admin} (GET page, model/view)
   -> application (use case và nghiệp vụ)
   -> infrastructure (Spring Data, tích hợp bên ngoài)
   -> domain (entity và quy tắc cốt lõi)
@@ -27,7 +28,8 @@ Mã backend nằm trong `src/main/java/vn/fs/backend`:
 backend/
 ├── presentation/
 │   ├── storefront/    Controller phía khách hàng
-│   ├── admin/         Controller và API quản trị
+│   ├── admin/         Controller render trang quản trị
+│   ├── api/v1/        REST API cho storefront và admin
 │   └── support/       Model dùng chung cho Thymeleaf
 ├── application/
 │   ├── service/       Use case, transaction và tích hợp nghiệp vụ
@@ -81,6 +83,10 @@ Quy ước:
 - Component dùng chung đặt trong `fragments`; không sao chép header/footer vào page.
 - Không đặt JavaScript nghiệp vụ trực tiếp vào nhiều page. Tách file theo khu vực
   trong static khi chỉnh sửa luồng đó.
+- Mutation của lát nghiệp vụ đã migrate chỉ gọi `/api/v1/**` qua
+  `window.bookshopApi`; form dùng `data-api-*`, không chứa action MVC dự phòng.
+- Dùng một jQuery 3.6.0 và một Bootstrap 4 cho cả storefront/admin. Không thêm
+  bản framework thứ hai vào từng page.
 
 ## Cách lần theo lỗi
 

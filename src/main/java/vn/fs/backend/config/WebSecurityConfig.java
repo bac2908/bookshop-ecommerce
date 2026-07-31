@@ -27,7 +27,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import vn.fs.backend.security.ApiSecurityErrorHandler;
 import vn.fs.backend.security.AuthenticationSuccessHandler;
 import vn.fs.backend.security.CustomAuthenticationFailureHandler;
-import vn.fs.backend.security.HybridLogoutSuccessHandler;
+import vn.fs.backend.security.ApiLogoutSuccessHandler;
 import vn.fs.backend.security.PreLoginLockFilter;
 
 @Configuration
@@ -50,15 +50,14 @@ public class WebSecurityConfig {
         String requestUri = request.getRequestURI();
         String contextPath = request.getContextPath();
         String applicationPath = requestUri.substring(contextPath.length());
-        return "/logout".equals(applicationPath)
-                || "/api/v1/auth/logout".equals(applicationPath);
+        return "/api/v1/auth/logout".equals(applicationPath);
     };
 
     @Autowired private AuthenticationSuccessHandler successHandler;
     @Autowired private CustomAuthenticationFailureHandler failureHandler;
     @Autowired private PreLoginLockFilter preLoginLockFilter;
     @Autowired private ApiSecurityErrorHandler apiSecurityErrorHandler;
-    @Autowired private HybridLogoutSuccessHandler hybridLogoutSuccessHandler;
+    @Autowired private ApiLogoutSuccessHandler apiLogoutSuccessHandler;
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
@@ -110,8 +109,8 @@ public class WebSecurityConfig {
                         .requestMatchers("/api/v1/admin/users/**", "/api/v1/admin/roles")
                                 .hasRole("ADMIN")
                         .requestMatchers("/api/v1/admin/reports/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/admin/orders/*/refund").hasRole("ADMIN")
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "STAFF")
-                        .requestMatchers("/api/v1/products/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/v1/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/", "/home", "/login", "/register",
                                 "/confirmOtpRegister", "/products", "/productDetail",
@@ -126,11 +125,11 @@ public class WebSecurityConfig {
                                 "/admin/reportOrderCustomer", "/admin/report-order-customer",
                                 "/admin/report/customer").hasRole("ADMIN")
                         .requestMatchers("/admin/customers/edit/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/paypal/**").hasRole("ADMIN")
                         .requestMatchers("/admin/**").hasAnyRole("ADMIN", "STAFF")
-                        .requestMatchers("/addToCart", "/remove/**", "/cart/**",
-                                "/shoppingCart_checkout", "/checkout", "/pay/**",
+                        .requestMatchers("/shoppingCart_checkout", "/checkout", "/pay/**",
                                 "/checkout_success", "/checkout_paypal_success").authenticated()
-                        .requestMatchers("/favorite/**", "/doFavorite", "/doUnFavorite",
+                        .requestMatchers("/favorite/**",
                                 "/profile/**", "/order/**").authenticated()
                         // An endpoint added later is private unless explicitly made public.
                         .anyRequest().authenticated())
@@ -146,7 +145,7 @@ public class WebSecurityConfig {
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
                         .logoutRequestMatcher(LOGOUT_REQUEST)
-                        .logoutSuccessHandler(hybridLogoutSuccessHandler)
+                        .logoutSuccessHandler(apiLogoutSuccessHandler)
                         .permitAll())
                 .rememberMe(remember -> remember
                         .rememberMeParameter("remember"))

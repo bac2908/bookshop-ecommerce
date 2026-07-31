@@ -109,6 +109,10 @@ Lưu ý: `docker compose down -v` xóa vĩnh viễn database Docker hiện tại
 Backend được chia thành `presentation`, `application`, `domain` và
 `infrastructure`. Frontend tách riêng `storefront`, `admin` và `email`.
 
+Frontend dùng thống nhất Bootstrap 4 và jQuery 3.6.0. Các chức năng đã migrate
+thay đổi dữ liệu qua `window.bookshopApi` và `/api/v1/**`; MVC controller chỉ
+render trang cho các lát nghiệp vụ đó.
+
 Xem luồng xử lý, quy tắc dependency và cách tìm lỗi tại
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 

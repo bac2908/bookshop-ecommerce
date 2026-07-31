@@ -79,9 +79,7 @@
                                 <span class="soft">ID: <strong th:text="${target.userId}">1</strong></span>
                             </div>
                             <div class="card-body">
-                                <form th:action="@{'/admin/customers/edit/' + ${target.userId}}"
-                                      method="post"
-                                      class="needs-validation"
+                                <form class="needs-validation"
                                       data-admin-user-access-form
                                       th:attr="data-user-id=${target.userId}"
                                       novalidate>
@@ -171,7 +169,7 @@
 </div>
 
 <!-- Vendor JS -->
-<script src="/admin-assets/js/core/jquery.3.2.1.min.js"></script>
+<script src="/storefront/vendor/bootstrap/jquery-3.6.0.min.js"></script>
 <script src="/admin-assets/js/core/popper.min.js"></script>
 <script src="/admin-assets/js/core/bootstrap.min.js"></script>
 

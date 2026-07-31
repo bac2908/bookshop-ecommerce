@@ -45,9 +45,11 @@ SPRINGDOC_SWAGGER_UI_ENABLED=true
 | GET | `/api/v1/products/{id}` | Công khai | Chi tiết sản phẩm đang bán |
 | GET | `/api/v1/categories` | Công khai | Danh sách thể loại đang hoạt động |
 | GET | `/api/v1/publishers` | Công khai | Danh sách nhà xuất bản đang hoạt động |
-| POST | `/api/v1/products` | ADMIN hoặc STAFF | Tạo sản phẩm |
-| PUT | `/api/v1/products/{id}` | ADMIN hoặc STAFF | Cập nhật sản phẩm |
-| DELETE | `/api/v1/products/{id}` | ADMIN hoặc STAFF | Xóa hoặc ẩn sản phẩm |
+| GET | `/api/v1/admin/products` | ADMIN hoặc STAFF | Tất cả sản phẩm, gồm sản phẩm đã ẩn |
+| POST | `/api/v1/admin/products` | ADMIN hoặc STAFF + CSRF | Tạo sản phẩm bằng multipart `data` + `file` |
+| PUT | `/api/v1/admin/products/{id}` | ADMIN hoặc STAFF + CSRF | Cập nhật dữ liệu và ảnh sản phẩm |
+| PUT | `/api/v1/admin/products/{id}/stock` | ADMIN hoặc STAFF + CSRF | Nhập thêm tồn kho |
+| PUT | `/api/v1/admin/products/{id}/visibility` | ADMIN hoặc STAFF + CSRF | Ẩn hoặc mở bán sản phẩm |
 | GET | `/api/v1/admin/users` | ADMIN | Tìm kiếm/phân trang người dùng |
 | GET | `/api/v1/admin/users/{userId}` | ADMIN | Chi tiết quyền truy cập |
 | PUT | `/api/v1/admin/users/{userId}/access` | ADMIN + CSRF | Cập nhật trạng thái và vai trò |
@@ -62,6 +64,8 @@ SPRINGDOC_SWAGGER_UI_ENABLED=true
 | PUT | `/api/v1/admin/publishers/{id}/visibility` | ADMIN hoặc STAFF + CSRF | Ẩn/hiện NXB và sản phẩm con |
 | GET | `/api/v1/admin/dashboard?days=7` | ADMIN hoặc STAFF | Snapshot KPI và chuỗi dữ liệu dashboard |
 | GET | `/api/v1/admin/reports?groupBy=PRODUCT` | ADMIN | Báo cáo doanh số đơn hoàn tất |
+| PUT | `/api/v1/admin/orders/{id}/status` | ADMIN hoặc STAFF + CSRF | Xác nhận, hoàn tất hoặc hủy đơn theo state machine |
+| POST | `/api/v1/admin/orders/{id}/refund` | ADMIN + CSRF | Hoàn toàn bộ giao dịch PayPal, idempotent |
 
 ## Luồng đăng nhập từ frontend
 
@@ -121,10 +125,12 @@ Mọi lỗi API trả cùng cấu trúc:
 
 Các mã chính gồm `VALIDATION_FAILED`, `INVALID_REQUEST`,
 `PRODUCT_NOT_FOUND`, `CATEGORY_NOT_FOUND`, `PUBLISHER_NOT_FOUND`,
-`PRODUCT_NAME_EXISTS`, `INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`,
+`PRODUCT_NAME_EXISTS`, `PRODUCT_IMAGE_REQUIRED`, `INVALID_PRODUCT_IMAGE`,
+`STOCK_UPDATE_FAILED`, `INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`,
 `PRODUCT_UNAVAILABLE`, `CART_ITEM_NOT_FOUND`, `INSUFFICIENT_STOCK`,
 `CART_EMPTY`, `CART_CHANGED`, `ORDER_NOT_FOUND`, `INVALID_ORDER_STATE`,
-`PAYMENT_PROVIDER_ERROR`, `PAYMENT_CAPTURE_FAILED`,
+`PAYMENT_PROVIDER_ERROR`, `PAYMENT_CAPTURE_FAILED`, `PAYMENT_REFUND_FAILED`,
+`ORDER_NOT_REFUNDABLE`, `UNSUPPORTED_ORDER_STATUS`,
 `USER_NOT_FOUND`, `USER_ROLE_REQUIRED`, `INVALID_ROLE`,
 `SELF_DISABLE_FORBIDDEN`, `SELF_DEMOTION_FORBIDDEN`,
 `LAST_ADMIN_PROTECTED`, `CATEGORY_NAME_EXISTS`, `PUBLISHER_NAME_EXISTS`,
@@ -136,7 +142,8 @@ Các mã chính gồm `VALIDATION_FAILED`, `INVALID_REQUEST`,
 `BookshopApiIntegrationTest` tạo một MySQL 8.4 container độc lập, chạy Flyway từ
 schema rỗng rồi kiểm tra API, validation, session rotation, CSRF, phân quyền,
 checkout COD/PayPal, tồn kho, quyền sở hữu đơn, callback idempotent, phân quyền
-quản trị, catalog multipart, báo cáo loại trừ đơn hủy và OpenAPI.
+quản trị, catalog/product multipart, trạng thái đơn quản trị, form API-only,
+báo cáo loại trừ đơn hủy và OpenAPI.
 Docker Desktop phải chạy khi thực thi:
 
 ```powershell

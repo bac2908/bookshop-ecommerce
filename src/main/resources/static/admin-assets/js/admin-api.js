@@ -206,6 +206,135 @@
             });
     }
 
+    function nullableNumber(rawValue) {
+        return rawValue === null || rawValue === undefined || rawValue === ""
+            ? null
+            : Number(rawValue);
+    }
+
+    function productPayload(form) {
+        return {
+            name: value(form, "productName"),
+            price: Number(value(form, "price")),
+            quantity: Number(value(form, "quantity")),
+            discount: Number(value(form, "discount") || 0),
+            description: value(form, "description") || null,
+            enteredDate: value(form, "enteredDate"),
+            active: booleanValue(form, "status"),
+            categoryId: Number(value(form, "categoryId")),
+            publisherId: nullableNumber(value(form, "nxbId")),
+            imageName: value(form, "productImage") || null
+        };
+    }
+
+    function bindProducts() {
+        document.querySelectorAll("[data-admin-product-create]")
+            .forEach(function (form) {
+                form.addEventListener("submit", function (event) {
+                    submitThroughApi(event, async function (currentForm) {
+                        await api().post(
+                            "/api/v1/admin/products",
+                            jsonMultipart(
+                                productPayload(currentForm),
+                                currentForm.querySelector("input[name='file']")
+                            )
+                        );
+                        global.location.assign("/admin/products");
+                    });
+                });
+            });
+
+        document.querySelectorAll("[data-admin-product-update]")
+            .forEach(function (form) {
+                form.addEventListener("submit", function (event) {
+                    submitThroughApi(event, async function (currentForm) {
+                        await api().put(
+                            "/api/v1/admin/products/"
+                                + encodeURIComponent(currentForm.dataset.productId),
+                            jsonMultipart(
+                                productPayload(currentForm),
+                                currentForm.querySelector("input[name='file']")
+                            )
+                        );
+                        global.location.assign("/admin/products");
+                    });
+                });
+            });
+
+        document.querySelectorAll("[data-admin-product-stock]")
+            .forEach(function (form) {
+                form.addEventListener("submit", function (event) {
+                    submitThroughApi(event, async function (currentForm) {
+                        await api().put(
+                            "/api/v1/admin/products/"
+                                + encodeURIComponent(currentForm.dataset.productId)
+                                + "/stock",
+                            { quantity: Number(value(currentForm, "qty")) }
+                        );
+                        global.location.reload();
+                    });
+                });
+            });
+
+        document.querySelectorAll("[data-admin-product-visibility]")
+            .forEach(function (form) {
+                form.addEventListener("submit", function (event) {
+                    submitThroughApi(event, async function (currentForm) {
+                        await api().put(
+                            "/api/v1/admin/products/"
+                                + encodeURIComponent(currentForm.dataset.productId)
+                                + "/visibility",
+                            { active: currentForm.dataset.active === "true" }
+                        );
+                        global.location.reload();
+                    });
+                });
+            });
+    }
+
+    function bindOrders() {
+        document.querySelectorAll("[data-admin-order-status]")
+            .forEach(function (form) {
+                form.addEventListener("submit", function (event) {
+                    submitThroughApi(event, async function (currentForm) {
+                        await api().put(
+                            "/api/v1/admin/orders/"
+                                + encodeURIComponent(currentForm.dataset.orderId)
+                                + "/status",
+                            { status: currentForm.dataset.adminOrderStatus }
+                        );
+                        global.location.reload();
+                    });
+                });
+            });
+
+        document.querySelectorAll("[data-admin-order-refund]")
+            .forEach(function (form) {
+                form.addEventListener("submit", function (event) {
+                    submitThroughApi(event, async function (currentForm) {
+                        await api().post(
+                            "/api/v1/admin/orders/"
+                                + encodeURIComponent(currentForm.dataset.orderId)
+                                + "/refund"
+                        );
+                        global.location.assign("/admin/orders");
+                    });
+                });
+            });
+    }
+
+    function bindLogout() {
+        document.querySelectorAll("[data-api-logout]")
+            .forEach(function (form) {
+                form.addEventListener("submit", function (event) {
+                    submitThroughApi(event, async function () {
+                        await api().logout();
+                        global.location.assign("/?logout_success");
+                    });
+                });
+            });
+    }
+
     function currency(value) {
         return new Intl.NumberFormat("vi-VN", {
             maximumFractionDigits: 0
@@ -270,6 +399,9 @@
         bindUserAccess();
         bindCategories();
         bindPublishers();
+        bindProducts();
+        bindOrders();
+        bindLogout();
         refreshReport();
     });
 })(window);

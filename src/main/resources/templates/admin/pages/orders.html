@@ -141,15 +141,18 @@
                                         <td><a class="orders__link" th:href="@{'/admin/order/detail/' + ${item.orderId}}">Chi tiết</a></td>
                                         <td class="text-center">
                                             <div th:if="${item.status == 0}">
-                                                <form th:action="@{'/admin/order/confirm/' + ${item.orderId}}" method="post">
+                                                <form data-admin-order-status="CONFIRMED"
+                                                      th:attr="data-order-id=${item.orderId}">
                                                     <button type="submit" class="orders__action--primary inline-action-button">Xác nhận</button>
                                                 </form>
-                                                <form class="mt-1" th:action="@{'/admin/order/cancel/' + ${item.orderId}}" method="post">
+                                                <form class="mt-1" data-admin-order-status="CANCELLED"
+                                                      th:attr="data-order-id=${item.orderId}">
                                                     <button type="submit" class="orders__action--danger inline-action-button">Hủy đơn</button>
                                                 </form>
                                             </div>
                                             <div th:if="${item.status == 1}">
-                                                <form th:action="@{'/admin/order/delivered/' + ${item.orderId}}" method="post">
+                                                <form data-admin-order-status="COMPLETED"
+                                                      th:attr="data-order-id=${item.orderId}">
                                                     <button type="submit" class="orders__action--warning inline-action-button">Xác nhận đã giao</button>
                                                 </form>
                                             </div>
@@ -187,7 +190,7 @@
     </div>
 </div>
 
-<script th:src="@{/admin-assets/js/core/jquery.3.2.1.min.js}"></script>
+<script th:src="@{/storefront/vendor/bootstrap/jquery-3.6.0.min.js}"></script>
 <script th:src="@{/admin-assets/js/core/popper.min.js}"></script>
 <script th:src="@{/admin-assets/js/core/bootstrap.min.js}"></script>
 <script th:src="@{/admin-assets/js/plugin/jquery-ui-1.12.1.custom/jquery-ui.min.js}"></script>

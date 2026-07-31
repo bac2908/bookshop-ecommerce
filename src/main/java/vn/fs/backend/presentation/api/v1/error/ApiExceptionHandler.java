@@ -12,6 +12,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -35,6 +36,8 @@ import vn.fs.backend.application.error.DuplicateCategoryNameException;
 import vn.fs.backend.application.error.DuplicatePublisherNameException;
 import vn.fs.backend.application.error.InvalidAccessChangeException;
 import vn.fs.backend.application.error.PublisherNotFoundException;
+import vn.fs.backend.application.error.OrderNotRefundableException;
+import vn.fs.backend.application.error.PaymentRefundFailedException;
 
 @Slf4j
 @RestControllerAdvice(basePackageClasses = {
@@ -101,6 +104,18 @@ public class ApiExceptionHandler {
                 List.of());
     }
 
+    @ExceptionHandler(ApiInvalidRequestException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidRequest(
+            ApiInvalidRequestException exception,
+            HttpServletRequest request) {
+        return error(
+                HttpStatus.BAD_REQUEST,
+                exception.getCode(),
+                exception.getMessage(),
+                request,
+                List.of());
+    }
+
     @ExceptionHandler(ApiUnauthorizedException.class)
     public ResponseEntity<ApiErrorResponse> handleUnauthorized(
             ApiUnauthorizedException exception,
@@ -109,6 +124,18 @@ public class ApiExceptionHandler {
                 HttpStatus.UNAUTHORIZED,
                 exception.getCode(),
                 exception.getMessage(),
+                request,
+                List.of());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> handleAccessDenied(
+            AccessDeniedException exception,
+            HttpServletRequest request) {
+        return error(
+                HttpStatus.FORBIDDEN,
+                "ACCESS_DENIED",
+                "Bạn không có quyền thực hiện thao tác này",
                 request,
                 List.of());
     }
@@ -278,6 +305,31 @@ public class ApiExceptionHandler {
         return error(
                 HttpStatus.CONFLICT,
                 "INVALID_ORDER_STATE",
+                exception.getMessage(),
+                request,
+                List.of());
+    }
+
+    @ExceptionHandler(OrderNotRefundableException.class)
+    public ResponseEntity<ApiErrorResponse> handleOrderNotRefundable(
+            OrderNotRefundableException exception,
+            HttpServletRequest request) {
+        return error(
+                HttpStatus.CONFLICT,
+                "ORDER_NOT_REFUNDABLE",
+                exception.getMessage(),
+                request,
+                List.of());
+    }
+
+    @ExceptionHandler(PaymentRefundFailedException.class)
+    public ResponseEntity<ApiErrorResponse> handlePaymentRefundFailed(
+            PaymentRefundFailedException exception,
+            HttpServletRequest request) {
+        log.warn("Payment refund failed at {}", request.getRequestURI(), exception);
+        return error(
+                HttpStatus.BAD_GATEWAY,
+                "PAYMENT_REFUND_FAILED",
                 exception.getMessage(),
                 request,
                 List.of());

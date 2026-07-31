@@ -20,7 +20,8 @@ Dự án chuyển theo từng lát nghiệp vụ, không viết lại toàn bộ
 | 2 | Giỏ hàng và yêu thích | Hoàn thành |
 | 3 | Checkout, tồn kho, đơn hàng và quyền xem/hủy đơn | Hoàn thành |
 | 4 | Quản trị người dùng, danh mục, báo cáo | Hoàn thành |
-| 5 | Gỡ endpoint MVC mutation trùng lặp và dọn JavaScript cũ | Tiếp theo |
+| 5 | Gỡ endpoint MVC mutation trùng lặp và dọn JavaScript cũ | Hoàn thành |
+| 6 | CI, quality gates và dọn repository | Tiếp theo |
 
 ## Tiêu chuẩn hoàn thành cho mỗi lát nghiệp vụ
 
@@ -40,8 +41,8 @@ Dự án chuyển theo từng lát nghiệp vụ, không viết lại toàn bộ
 - Session ID được đổi sau khi đăng nhập để chống session fixation.
 - Không trả entity `User` ra ngoài; `/auth/me` chỉ trả dữ liệu an toàn và roles.
 - Bộ đếm khóa tài khoản/IP được dùng chung cho cả form login và API login.
-- Logout API trả `204`; logout MVC vẫn redirect về trang chủ để không phá giao
-  diện hiện hữu.
+- Logout API trả `204`; endpoint logout MVC được gỡ ở giai đoạn 5 sau khi cả
+  storefront và admin đã dùng API.
 
 ## Quyết định kiến trúc giai đoạn 2
 
@@ -102,3 +103,23 @@ Dự án chuyển theo từng lát nghiệp vụ, không viết lại toàn bộ
   hoặc số lượng bán.
 - Form admin hiện tại được JavaScript bridge sang API nhưng vẫn giữ POST MVC làm
   progressive fallback cho tới giai đoạn 5.
+
+## Quyết định kiến trúc giai đoạn 5
+
+- Các form của lát nghiệp vụ đã migrate dùng `data-api-*` rõ nghĩa; JavaScript
+  không còn phân tích URL MVC cũ để đoán thao tác.
+- Đã gỡ mutation MVC trùng lặp của logout, giỏ hàng, yêu thích, checkout,
+  callback PayPal, hủy đơn khách hàng, quyền người dùng, category, NXB, sản phẩm,
+  trạng thái đơn quản trị và hoàn tiền.
+- `ProductApiController` chỉ còn API đọc công khai. Mọi thao tác ghi sản phẩm
+  nằm dưới `/api/v1/admin/products`, hỗ trợ multipart ảnh, nhập kho và soft
+  visibility; giao diện không còn gọi hard-delete.
+- Trạng thái đơn quản trị đi qua một API state-machine. Hoàn tiền PayPal chỉ dành
+  cho `ADMIN`; lỗi method-security được chuẩn hóa thành `403 ACCESS_DENIED`.
+- API dashboard cũ `/admin/api/dashboard/**` đã được gỡ vì trùng với
+  `/api/v1/admin/dashboard`.
+- Toàn dự án chỉ tải một jQuery 3.6.0 và một Bootstrap 4; các bản jQuery 1.12,
+  3.2 và Bootstrap 5 beta không còn được tham chiếu và đã bị xóa.
+- Các POST MVC còn lại chỉ là luồng chưa migrate, không có endpoint API trùng:
+  đăng ký/OTP, khôi phục mật khẩu và cập nhật hồ sơ. Chúng tiếp tục có CSRF và
+  sẽ không bị xóa cho tới khi có API/test thay thế.

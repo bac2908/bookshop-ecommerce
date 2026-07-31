@@ -1,7 +1,6 @@
 package vn.fs.backend.presentation.admin;
 
 import java.io.IOException;
-import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -17,8 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import vn.fs.backend.application.dto.OrderExcelExporter;
 import vn.fs.backend.domain.model.Order;
 import vn.fs.backend.domain.model.OrderDetail;
-import vn.fs.backend.domain.model.User;
-import vn.fs.backend.infrastructure.persistence.UserRepository;
 import vn.fs.backend.application.service.OrderAdminService;
 
 @Controller
@@ -26,17 +23,6 @@ import vn.fs.backend.application.service.OrderAdminService;
 public class OrderController {
 
     @Autowired private OrderAdminService orderService;
-    @Autowired private UserRepository userRepository;
-
-    @ModelAttribute("user")
-    public User user(Model model, Principal principal, User user) {
-        if (principal != null) {
-            user = userRepository.findByEmail(principal.getName());
-            model.addAttribute("user", user);
-        }
-        return user;
-    }
-
     // list + filters (auto-apply)
     @GetMapping("/orders")
     public String orders(Model model,
@@ -69,24 +55,6 @@ public class OrderController {
         model.addAttribute("orderId", id);
         model.addAttribute("menuO", "menu");
         return "admin/pages/order-detail";
-    }
-
-    @PostMapping("/order/cancel/{order_id}")
-    public String cancel(@PathVariable("order_id") Long id) {
-        orderService.cancel(id);
-        return "redirect:/admin/orders";
-    }
-
-    @PostMapping("/order/confirm/{order_id}")
-    public String confirm(@PathVariable("order_id") Long id) {
-        orderService.confirm(id);
-        return "redirect:/admin/orders";
-    }
-
-    @PostMapping("/order/delivered/{order_id}")
-    public String delivered(@PathVariable("order_id") Long id) {
-        orderService.complete(id);
-        return "redirect:/admin/orders";
     }
 
     @GetMapping("/export")

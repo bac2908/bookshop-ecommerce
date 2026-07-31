@@ -10,18 +10,13 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 import org.springframework.stereotype.Component;
 
 @Component
-public class HybridLogoutSuccessHandler implements LogoutSuccessHandler {
+public class ApiLogoutSuccessHandler implements LogoutSuccessHandler {
 
     @Override
     public void onLogoutSuccess(
             HttpServletRequest request,
             HttpServletResponse response,
             Authentication authentication) throws IOException {
-        String applicationPath = request.getRequestURI().substring(request.getContextPath().length());
-        if (applicationPath.startsWith("/api/")) {
-            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
-            return;
-        }
-        response.sendRedirect(request.getContextPath() + "/?logout_success");
+        response.setStatus(HttpServletResponse.SC_NO_CONTENT);
     }
 }

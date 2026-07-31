@@ -39,10 +39,7 @@
                             <div class="alert alert-success" th:if="${message}" th:text="${message}"></div>
 
                             <!-- NHỚ enctype -->
-                            <form th:action="@{/admin/editCategory/{id}(id=${category.categoryId})}"
-                                  th:object="${category}"
-                                  method="post"
-                                  enctype="multipart/form-data"
+                            <form th:object="${category}"
                                   data-admin-category-update
                                   th:attr="data-category-id=${category.categoryId}">
                                 <div class="row">
@@ -118,7 +115,7 @@
     </div>
 </div>
 
-<script src="/admin-assets/js/core/jquery.3.2.1.min.js"></script>
+<script src="/storefront/vendor/bootstrap/jquery-3.6.0.min.js"></script>
 <script src="/admin-assets/js/core/popper.min.js"></script>
 <script src="/admin-assets/js/core/bootstrap.min.js"></script>
 <script src="/admin-assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js"></script>

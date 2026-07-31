@@ -11,9 +11,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import vn.fs.backend.application.error.InvalidAccessChangeException;
 import vn.fs.backend.domain.model.Role;
 import vn.fs.backend.domain.model.User;
 import vn.fs.backend.application.service.UserAdminService;
@@ -60,34 +57,4 @@ public class UserController {
         return "admin/pages/user-form";
     }
 
-    // Lưu quyền + trạng thái (ADMIN only)
-    @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping("/edit/{id}")
-    public String update(@PathVariable("id") Long id,
-                         @RequestParam(value = "roleIds", required = false) List<Long> roleIds,
-                         @RequestParam(value = "enabled", required = false) String enabled,
-                         Principal principal,
-                         RedirectAttributes redirectAttributes
-    ) {
-        User target = userAdminService.getById(id);
-        if (target == null) {
-            return "redirect:/admin/customers?notfound=1";
-        }
-
-        boolean isEnabled = StringUtils.hasText(enabled);
-        try {
-            userAdminService.updateRolesAndStatus(
-                    id,
-                    roleIds,
-                    isEnabled,
-                    principal.getName());
-        } catch (InvalidAccessChangeException exception) {
-            redirectAttributes.addFlashAttribute(
-                    "flashErr",
-                    exception.getMessage());
-            return "redirect:/admin/customers/edit/" + id;
-        }
-
-        return "redirect:/admin/customers?updated=1";
-    }
 }

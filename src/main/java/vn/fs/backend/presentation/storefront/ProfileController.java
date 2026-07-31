@@ -16,7 +16,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -24,7 +23,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import vn.fs.backend.domain.model.Order;
 import vn.fs.backend.domain.model.OrderDetail;
 import vn.fs.backend.domain.model.User;
-import vn.fs.backend.application.error.InvalidOrderStateException;
 import vn.fs.backend.application.error.OrderNotFoundException;
 import vn.fs.backend.application.service.OrderService;
 import vn.fs.backend.infrastructure.persistence.UserRepository;
@@ -112,27 +110,6 @@ public class ProfileController {
         model.addAttribute("user", current);
         model.addAttribute("orderDetail", details);
         return new ModelAndView("storefront/pages/order-detail");
-    }
-
-    @PostMapping("/order/cancel/{order_id}")
-    public ModelAndView cancel(ModelMap model,
-                               Principal principal,
-                               @PathVariable("order_id") Long id,
-                               RedirectAttributes ra) {
-        User current = resolveCurrentUser(principal);
-        if (current == null) {
-            return new ModelAndView("redirect:/login", model);
-        }
-
-        try {
-            orderService.cancelOwned(id, current.getUserId());
-            ra.addFlashAttribute("ok", "Đã hủy đơn hàng.");
-        } catch (OrderNotFoundException exception) {
-            ra.addFlashAttribute("err", "Không tìm thấy đơn hàng.");
-        } catch (InvalidOrderStateException exception) {
-            ra.addFlashAttribute("err", exception.getMessage());
-        }
-        return new ModelAndView("redirect:/profile", model);
     }
 
     @PostMapping("/profile/update")

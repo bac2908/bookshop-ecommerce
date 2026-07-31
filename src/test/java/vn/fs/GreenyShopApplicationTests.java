@@ -105,10 +105,20 @@ class GreenyShopApplicationTests {
 
 	@Test
 	@WithMockUser(username = "security-test", roles = "USER")
-	void mvcLogoutStillRedirectsToStorefront() throws Exception {
+	void legacyMvcLogoutEndpointIsRemoved() throws Exception {
 		mockMvc.perform(post("/logout").with(csrf()))
-				.andExpect(status().is3xxRedirection())
-				.andExpect(redirectedUrl("/?logout_success"));
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	@WithMockUser(username = "security-test", roles = "ADMIN")
+	void legacyMvcBusinessMutationEndpointsAreRemoved() throws Exception {
+		mockMvc.perform(post("/addToCart").with(csrf()).param("productId", "1"))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(post("/doFavorite").with(csrf()).param("id", "1"))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(post("/admin/addCategory").with(csrf()))
+				.andExpect(status().isNotFound());
 	}
 
 	@Test

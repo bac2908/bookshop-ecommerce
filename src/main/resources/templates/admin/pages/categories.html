@@ -81,10 +81,7 @@
                                             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                                         </div>
                                         <div class="modal-body">
-                                            <form th:action="@{/admin/addCategory}"
-                                                  th:object="${category}"
-                                                  method="post"
-                                                  enctype="multipart/form-data"
+                                            <form th:object="${category}"
                                                   data-admin-category-create>
                                                 <div class="row">
                                                     <div class="col-sm-12">
@@ -187,9 +184,7 @@
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                                                                    <form th:action="@{/admin/delete/{id}(id=${item.categoryId})}"
-                                                                          method="post"
-                                                                          data-admin-category-visibility
+                                                                    <form data-admin-category-visibility
                                                                           data-active="false"
                                                                           th:attr="data-category-id=${item.categoryId}">
                                                                         <button class="btn btn-danger" type="submit">Xác nhận Ẩn</button>
@@ -222,9 +217,7 @@
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                                                                    <form th:action="@{/admin/restoreCategory/{id}(id=${item.categoryId})}"
-                                                                          method="post"
-                                                                          data-admin-category-visibility
+                                                                    <form data-admin-category-visibility
                                                                           data-active="true"
                                                                           th:attr="data-category-id=${item.categoryId}">
                                                                         <button class="btn btn-success" type="submit">Xác nhận</button>
@@ -256,7 +249,7 @@
     </div><!-- /main-panel -->
 </div><!-- /wrapper -->
 
-<script src="/admin-assets/js/core/jquery.3.2.1.min.js"></script>
+<script src="/storefront/vendor/bootstrap/jquery-3.6.0.min.js"></script>
 <script src="/admin-assets/js/core/popper.min.js"></script>
 <script src="/admin-assets/js/core/bootstrap.min.js"></script>
 <script src="/admin-assets/js/plugin/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>

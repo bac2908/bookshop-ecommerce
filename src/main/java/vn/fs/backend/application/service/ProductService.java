@@ -151,6 +151,13 @@ public class ProductService {
         return productRepository.increaseStock(id, qty) == 1;
     }
 
+    @Transactional
+    public Product setVisibility(Long id, boolean active) {
+        Product product = productRepository.findById(id).orElseThrow();
+        product.setStatus(active);
+        return productRepository.save(product);
+    }
+
     /* ---------- Delete / Restore ---------- */
     @Transactional
     public boolean softOrHardDelete(Long id) {

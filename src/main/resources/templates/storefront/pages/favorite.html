@@ -19,7 +19,7 @@
     <link rel="stylesheet" th:href="@{/storefront/vendor/venobox/venobox.min.css}" />
     <link rel="stylesheet" th:href="@{/storefront/vendor/slickslider/slick.min.css}" />
     <link rel="stylesheet" th:href="@{/storefront/vendor/niceselect/nice-select.min.css}" />
-    <link rel="stylesheet" th:href="@{/storefront/vendor/bootstrap/bootstrap.min.css}" />
+    <link rel="stylesheet" th:href="@{/admin-assets/css/bootstrap.min.css}" />
     <link rel="stylesheet" th:href="@{/storefront/css/main.css}" />
     <link rel="stylesheet" th:href="@{/storefront/css/wishlist.css}" />
 </head>
@@ -91,7 +91,8 @@
                                 <!-- Y hệt shop.html: còn hàng -> nút active; hết hàng -> disabled -->
                                 <form class="inline-action-form block-action-form"
                                       th:if="${!outOfStock}"
-                                      th:action="@{/addToCart(productId=${item.product.productId})}" method="post">
+                                      data-api-cart-action="add"
+                                      th:attr="data-product-id=${item.product.productId}">
                                     <button class="product-add1" type="submit" title="Thêm giỏ hàng">
                                         Thêm giỏ hàng
                                     </button>
@@ -112,7 +113,8 @@
                                 </a>
 
                                 <form class="inline-action-form"
-                                      th:action="@{/doUnFavorite(id=${item.product.productId})}" method="post">
+                                      data-api-favorite-action="remove"
+                                      th:attr="data-product-id=${item.product.productId}">
                                     <button class="trash inline-action-button" type="submit"
                                             title="Xóa yêu thích">
                                         <i class="icofont-trash"></i>
@@ -194,9 +196,9 @@
 
 <footer th:replace="~{storefront/fragments/footer :: footer}"></footer>
 
-<script th:src="@{/storefront/vendor/bootstrap/jquery-1.12.4.min.js}"></script>
-<script th:src="@{/storefront/vendor/bootstrap/popper.min.js}"></script>
-<script th:src="@{/storefront/vendor/bootstrap/bootstrap.min.js}"></script>
+<script th:src="@{/storefront/vendor/bootstrap/jquery-3.6.0.min.js}"></script>
+<script th:src="@{/admin-assets/js/core/popper.min.js}"></script>
+<script th:src="@{/admin-assets/js/core/bootstrap.min.js}"></script>
 <script th:src="@{/storefront/vendor/countdown/countdown.min.js}"></script>
 <script th:src="@{/storefront/vendor/niceselect/nice-select.min.js}"></script>
 <script th:src="@{/storefront/vendor/slickslider/slick.min.js}"></script>

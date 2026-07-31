@@ -35,9 +35,7 @@
                         <div class="card-header"><h4 class="card-title">Sửa NXB</h4></div>
                         <div class="card-body">
 
-                            <form th:action="@{/admin/editNxb/{id}(id=${nxb.id})}"
-                                  th:object="${nxb}"
-                                  method="post"
+                            <form th:object="${nxb}"
                                   data-admin-publisher-update
                                   th:attr="data-publisher-id=${nxb.id}">
                                 <div class="row">
@@ -88,7 +86,7 @@
     </div>
 </div>
 
-<script src="/admin-assets/js/core/jquery.3.2.1.min.js"></script>
+<script src="/storefront/vendor/bootstrap/jquery-3.6.0.min.js"></script>
 <script src="/admin-assets/js/core/popper.min.js"></script>
 <script src="/admin-assets/js/core/bootstrap.min.js"></script>
 <script src="/admin-assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js"></script>

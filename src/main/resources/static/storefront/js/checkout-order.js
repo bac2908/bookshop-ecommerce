@@ -49,13 +49,12 @@
 
     document.addEventListener("submit", async function (event) {
         var form = event.target;
-        if (!(form instanceof HTMLFormElement) || !form.action) {
+        if (!(form instanceof HTMLFormElement)) {
             return;
         }
-        var action = new URL(form.action, global.location.origin);
-        var cancelMatch = action.pathname.match(/^\/order\/cancel\/(\d+)$/);
-        var isCheckout = action.pathname === "/checkout";
-        if (!isCheckout && !cancelMatch) {
+        var isCheckout = form.hasAttribute("data-api-checkout");
+        var isCancellation = form.hasAttribute("data-api-order-cancel");
+        if (!isCheckout && !isCancellation) {
             return;
         }
 
@@ -69,7 +68,7 @@
             if (isCheckout) {
                 await submitCheckout(form);
             } else {
-                await api.cancelOrder(cancelMatch[1]);
+                await api.cancelOrder(form.dataset.orderId);
                 global.location.reload();
             }
         } catch (error) {

@@ -52,8 +52,9 @@
                             <div class="row">
                                 <div class="col-lg-8 offset-lg-2">
                                     <!-- NHỚ enctype -->
-                                    <form th:action="@{/admin/editProduct/{id}(id=${product.productId})}"
-                                          th:object="${product}" method="post" enctype="multipart/form-data">
+                                    <form th:object="${product}"
+                                          data-admin-product-update
+                                          th:attr="data-product-id=${product.productId}">
 
                                         <div class="form-group">
                                             <label>ID</label>
@@ -176,7 +177,7 @@
 </div>
 
 <!-- Core JS -->
-<script src="/admin-assets/js/core/jquery.3.2.1.min.js"></script>
+<script src="/storefront/vendor/bootstrap/jquery-3.6.0.min.js"></script>
 <script src="/admin-assets/js/core/popper.min.js"></script>
 <script src="/admin-assets/js/core/bootstrap.min.js"></script>
 <script src="/admin-assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js"></script>

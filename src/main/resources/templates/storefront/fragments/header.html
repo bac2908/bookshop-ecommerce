@@ -174,7 +174,7 @@
                                         <li><a th:href="@{/profile}">Thông tin tài khoản</a></li>
                                         <li><a th:href="@{/profile/change-password}">Đổi Mật khẩu</a></li>
                                         <li>
-                                            <form class="inline-action-form" th:action="@{/logout}" method="post">
+                                            <form class="inline-action-form" data-api-logout>
                                                 <button class="inline-action-button" type="submit">Đăng xuất</button>
                                             </form>
                                         </li>
@@ -252,8 +252,8 @@
                             <div class="qty-row">
                                 <!-- DEC: khoá khi q<=1 -->
                                 <form class="inline-action-form"
-                                      th:action="@{/cart/dec(productId=${item.product.productId}, redirect='mini')}"
-                                      method="post">
+                                      data-api-cart-action="decrement"
+                                      th:attr="data-product-id=${item.product.productId}">
                                     <button class="qty-btn" type="submit" th:disabled="${q <= 1}">−</button>
                                 </form>
 
@@ -261,8 +261,8 @@
 
                                 <!-- INC: khoá khi q>=max -->
                                 <form class="inline-action-form"
-                                      th:action="@{/cart/inc(productId=${item.product.productId}, redirect='mini')}"
-                                      method="post">
+                                      data-api-cart-action="increment"
+                                      th:attr="data-product-id=${item.product.productId}">
                                     <button class="qty-btn" type="submit" th:disabled="${q >= max}">+</button>
                                 </form>
                             </div>
@@ -274,7 +274,8 @@
                             </div>
 
                             <form class="inline-action-form"
-                                  th:action="@{/remove/{id}(id=${item.product.productId})}" method="post">
+                                  data-api-cart-action="remove"
+                                  th:attr="data-product-id=${item.product.productId}">
                                 <button class="rm-btn" type="submit" title="Xoá">
                                     <i class="icofont-trash"></i>
                                 </button>

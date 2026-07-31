@@ -11,13 +11,9 @@
         return Number.isFinite(parsed) ? parsed : fallback;
     }
 
-    function formValue(form, actionUrl, name, fallback) {
+    function formValue(form, name, fallback) {
         var bodyValue = new FormData(form).get(name);
-        if (bodyValue !== null && bodyValue !== "") {
-            return bodyValue;
-        }
-        var queryValue = actionUrl.searchParams.get(name);
-        return queryValue === null || queryValue === "" ? fallback : queryValue;
+        return bodyValue === null || bodyValue === "" ? fallback : bodyValue;
     }
 
     function setText(id, value) {
@@ -80,44 +76,47 @@
         return api.setCartItemQuantity(productId, targetQuantity);
     }
 
-    async function handleLegacyMutation(form, actionUrl) {
-        var path = actionUrl.pathname;
-        var productId;
+    async function handleApiMutation(form) {
+        var cartAction = form.dataset.apiCartAction;
+        var favoriteAction = form.dataset.apiFavoriteAction;
+        var productId = form.dataset.productId;
         var quantity;
         var response;
 
-        if (path === "/addToCart") {
-            productId = formValue(form, actionUrl, "productId", null);
-            quantity = numberValue(formValue(form, actionUrl, "qty", 1), 1);
+        if (form.hasAttribute("data-api-logout")) {
+            await api.logout();
+            global.location.assign("/?logout_success");
+            return true;
+        }
+
+        if (cartAction === "add") {
+            quantity = numberValue(formValue(form, "qty", 1), 1);
             response = await api.addCartItem(productId, Math.max(1, quantity));
             updateCartBadges(response);
             return true;
         }
 
-        if (path === "/cart/inc" || path === "/cart/dec") {
-            productId = formValue(form, actionUrl, "productId", null);
+        if (cartAction === "increment" || cartAction === "decrement") {
             var step = Math.max(
                 1,
-                numberValue(formValue(form, actionUrl, "step", 1), 1)
+                numberValue(formValue(form, "step", 1), 1)
             );
             response = await mutateCartQuantity(
                 productId,
-                path === "/cart/inc" ? step : -step
+                cartAction === "increment" ? step : -step
             );
             updateCartBadges(response);
             return true;
         }
 
-        var removeMatch = path.match(/^\/remove\/(\d+)$/);
-        if (removeMatch) {
-            response = await api.removeCartItem(removeMatch[1]);
+        if (cartAction === "remove") {
+            response = await api.removeCartItem(productId);
             updateCartBadges(response);
             return true;
         }
 
-        if (path === "/doFavorite" || path === "/doUnFavorite") {
-            productId = formValue(form, actionUrl, "id", null);
-            response = path === "/doFavorite"
+        if (favoriteAction === "add" || favoriteAction === "remove") {
+            response = favoriteAction === "add"
                 ? await api.addFavorite(productId)
                 : await api.removeFavorite(productId);
             updateFavoriteBadge(response);
@@ -129,17 +128,13 @@
 
     document.addEventListener("submit", async function (event) {
         var form = event.target;
-        if (!(form instanceof HTMLFormElement) || !form.action) {
+        if (!(form instanceof HTMLFormElement)) {
             return;
         }
 
-        var actionUrl = new URL(form.action, global.location.origin);
-        var supported = actionUrl.pathname === "/addToCart"
-            || actionUrl.pathname === "/cart/inc"
-            || actionUrl.pathname === "/cart/dec"
-            || actionUrl.pathname === "/doFavorite"
-            || actionUrl.pathname === "/doUnFavorite"
-            || /^\/remove\/\d+$/.test(actionUrl.pathname);
+        var supported = form.hasAttribute("data-api-cart-action")
+            || form.hasAttribute("data-api-favorite-action")
+            || form.hasAttribute("data-api-logout");
         if (!supported) {
             return;
         }
@@ -155,8 +150,8 @@
         }
 
         try {
-            var handled = await handleLegacyMutation(form, actionUrl);
-            if (handled) {
+            var handled = await handleApiMutation(form);
+            if (handled && !form.hasAttribute("data-api-logout")) {
                 global.location.reload();
             }
         } catch (error) {

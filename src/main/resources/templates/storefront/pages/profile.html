@@ -19,7 +19,7 @@
     <link rel="stylesheet" href="/storefront/vendor/venobox/venobox.min.css"/>
     <link rel="stylesheet" href="/storefront/vendor/slickslider/slick.min.css"/>
     <link rel="stylesheet" href="/storefront/vendor/niceselect/nice-select.min.css"/>
-    <link rel="stylesheet" href="/storefront/vendor/bootstrap/bootstrap.min.css"/>
+    <link rel="stylesheet" href="/admin-assets/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="/storefront/css/main.css"/>
     <link rel="stylesheet" href="/storefront/css/profile.css"/>
 
@@ -281,7 +281,7 @@
 <script>
     function showConfigCancelModalDialog(id) {
         $('#idCancel').text(id);
-        $('#cancelOrderForm').attr('action', '/order/cancel/' + encodeURIComponent(id));
+        document.getElementById('cancelOrderForm').dataset.orderId = id;
         $('#configmationCancelId').modal('show');
     }
 </script>
@@ -290,7 +290,7 @@
 <div class="modal" id="configmationCancelId">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <button class="modal-close" data-bs-dismiss="modal">
+            <button class="modal-close" data-dismiss="modal">
                 <i class="icofont-close"></i>
             </button>
             <div class="modal-form">
@@ -301,8 +301,7 @@
                     </p>
                 </div>
                 <div class="modal-footer">
-                    <form id="cancelOrderForm" method="post">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <form id="cancelOrderForm" data-api-order-cancel>
                         <button type="submit" class="btn btn-success">Có</button>
                     </form>
                 </div>
@@ -407,9 +406,9 @@
     })();
 </script>
 
-<script src="/storefront/vendor/bootstrap/jquery-1.12.4.min.js"></script>
-<script src="/storefront/vendor/bootstrap/popper.min.js"></script>
-<script src="/storefront/vendor/bootstrap/bootstrap.min.js"></script>
+<script src="/storefront/vendor/bootstrap/jquery-3.6.0.min.js"></script>
+<script src="/admin-assets/js/core/popper.min.js"></script>
+<script src="/admin-assets/js/core/bootstrap.min.js"></script>
 <script src="/storefront/vendor/countdown/countdown.min.js"></script>
 <script src="/storefront/vendor/niceselect/nice-select.min.js"></script>
 <script src="/storefront/vendor/slickslider/slick.min.js"></script>

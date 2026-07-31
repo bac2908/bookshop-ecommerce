@@ -273,7 +273,7 @@ class BookshopApiIntegrationTest {
 
     @Test
     void protectedMutationRequiresAuthentication() throws Exception {
-        mockMvc.perform(post("/api/v1/products")
+        mockMvc.perform(post("/api/v1/admin/products")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
@@ -391,7 +391,7 @@ class BookshopApiIntegrationTest {
 
     @Test
     void protectedMutationRejectsMissingCsrfTokenWithJsonError() throws Exception {
-        mockMvc.perform(post("/api/v1/products")
+        mockMvc.perform(post("/api/v1/admin/products")
                         .with(user("api-admin").roles("ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
@@ -759,11 +759,22 @@ class BookshopApiIntegrationTest {
 
     @Test
     void invalidProductBodyReturnsFieldErrors() throws Exception {
-        mockMvc.perform(post("/api/v1/products")
+        MockMultipartFile data = new MockMultipartFile(
+                "data",
+                "data.json",
+                MediaType.APPLICATION_JSON_VALUE,
+                objectMapper.writeValueAsBytes(Map.of()));
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "book.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                new byte[] {1, 2, 3});
+
+        mockMvc.perform(multipart("/api/v1/admin/products")
+                        .file(data)
+                        .file(file)
                         .with(user("api-admin").roles("ADMIN"))
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .with(csrf()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.fieldErrors[*].field", hasItem("name")))
@@ -771,7 +782,7 @@ class BookshopApiIntegrationTest {
     }
 
     @Test
-    void adminCanCreateAndDeleteProductWithValidationAndCsrf() throws Exception {
+    void adminCanCreateAdjustStockAndHideProductWithValidationAndCsrf() throws Exception {
         Map<String, Object> request = Map.ofEntries(
                 Map.entry("name", "Sản phẩm kiểm thử API"),
                 Map.entry("price", 79000),
@@ -784,11 +795,22 @@ class BookshopApiIntegrationTest {
                 Map.entry("publisherId", 1),
                 Map.entry("imageName", "api-integration-book.jpg"));
 
-        MvcResult created = mockMvc.perform(post("/api/v1/products")
+        MockMultipartFile data = new MockMultipartFile(
+                "data",
+                "data.json",
+                MediaType.APPLICATION_JSON_VALUE,
+                objectMapper.writeValueAsBytes(request));
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "api-integration-book.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                new byte[] {1, 2, 3});
+
+        MvcResult created = mockMvc.perform(multipart("/api/v1/admin/products")
+                        .file(data)
+                        .file(file)
                         .with(user("api-admin").roles("ADMIN"))
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsBytes(request)))
+                        .with(csrf()))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
                 .andExpect(jsonPath("$.name").value("Sản phẩm kiểm thử API"))
@@ -797,10 +819,75 @@ class BookshopApiIntegrationTest {
         JsonNode response = objectMapper.readTree(created.getResponse().getContentAsByteArray());
         long productId = response.path("id").asLong();
 
-        mockMvc.perform(delete("/api/v1/products/{id}", productId)
+        mockMvc.perform(put("/api/v1/admin/products/{id}/stock", productId)
                         .with(user("api-admin").roles("ADMIN"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(Map.of("quantity", 5))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.quantity").value(30));
+
+        mockMvc.perform(put("/api/v1/admin/products/{id}/visibility", productId)
+                        .with(user("api-admin").roles("ADMIN"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(Map.of("active", false))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(false));
+    }
+
+    @Test
+    void adminOrderApiEnforcesTransitionsAndRefundRole() throws Exception {
+        long orderId = insertOrder(userId("api_customer"), 0, 125_000);
+
+        mockMvc.perform(put("/api/v1/admin/orders/{id}/status", orderId)
+                        .with(user("api_staff").roles("STAFF"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(Map.of(
+                                "status", "CONFIRMED"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CONFIRMED"));
+
+        mockMvc.perform(put("/api/v1/admin/orders/{id}/status", orderId)
+                        .with(user("api_staff").roles("STAFF"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(Map.of(
+                                "status", "COMPLETED"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value(2));
+
+        mockMvc.perform(post("/api/v1/admin/orders/{id}/refund", orderId)
+                        .with(user("api_staff").roles("STAFF"))
                         .with(csrf()))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
+    void phaseFiveTemplatesRenderApiOnlyMutationForms() throws Exception {
+        addProductToCart("api_customer", 1L, 1);
+
+        MvcResult checkoutPage = mockMvc.perform(get("/checkout")
+                        .with(user("api_customer").roles("USER")))
+                .andExpect(status().isOk())
+                .andReturn();
+        String checkoutHtml = checkoutPage.getResponse().getContentAsString();
+        assertTrue(checkoutHtml.contains("data-api-checkout"));
+        assertTrue(checkoutHtml.contains("data-api-cart-action=\"increment\""));
+        assertTrue(!checkoutHtml.contains("action=\"/checkout\""));
+        assertTrue(!checkoutHtml.contains("action=\"/cart/inc"));
+
+        MvcResult productsPage = mockMvc.perform(get("/admin/products")
+                        .with(user("api_staff").roles("STAFF")))
+                .andExpect(status().isOk())
+                .andReturn();
+        String productsHtml = productsPage.getResponse().getContentAsString();
+        assertTrue(productsHtml.contains("data-admin-product-create"));
+        assertTrue(productsHtml.contains("data-admin-product-stock"));
+        assertTrue(!productsHtml.contains("action=\"/admin/addProduct\""));
+        assertTrue(productsHtml.contains("jquery-3.6.0.min.js"));
     }
 
     @Test
@@ -1195,6 +1282,15 @@ class BookshopApiIntegrationTest {
                         .exists())
                 .andExpect(jsonPath(
                         "$.paths['/api/v1/admin/reports']")
+                        .exists())
+                .andExpect(jsonPath(
+                        "$.paths['/api/v1/admin/products']")
+                        .exists())
+                .andExpect(jsonPath(
+                        "$.paths['/api/v1/admin/products/{productId}/stock']")
+                        .exists())
+                .andExpect(jsonPath(
+                        "$.paths['/api/v1/admin/orders/{orderId}/status']")
                         .exists())
                 .andExpect(jsonPath("$.components.schemas.ApiErrorResponse").exists());
     }

@@ -19,7 +19,7 @@
     <link rel="stylesheet" th:href="@{/storefront/vendor/venobox/venobox.min.css}" />
     <link rel="stylesheet" th:href="@{/storefront/vendor/slickslider/slick.min.css}" />
     <link rel="stylesheet" th:href="@{/storefront/vendor/niceselect/nice-select.min.css}" />
-    <link rel="stylesheet" th:href="@{/storefront/vendor/bootstrap/bootstrap.min.css}" />
+    <link rel="stylesheet" th:href="@{/admin-assets/css/bootstrap.min.css}" />
     <link rel="stylesheet" th:href="@{/storefront/css/main.css}" />
     <link rel="stylesheet" th:href="@{/storefront/css/checkout.css}" />
 
@@ -111,8 +111,8 @@
                                                 max=${rawMax == null ? 999999 : rawMax}
                                              ">
                                             <form class="inline-action-form"
-                                                  th:action="@{/cart/dec(productId=${item.product.productId}, redirect='checkout')}"
-                                                  method="post">
+                                                  data-api-cart-action="decrement"
+                                                  th:attr="data-product-id=${item.product.productId}">
                                                 <button class="btn btn-sm btn-outline-secondary"
                                                         type="submit" th:disabled="${q <= 1}"
                                                         title="Giảm">−</button>
@@ -121,8 +121,8 @@
                                             <span><strong>[[${q}]]</strong></span>
 
                                             <form class="inline-action-form"
-                                                  th:action="@{/cart/inc(productId=${item.product.productId}, redirect='checkout')}"
-                                                  method="post">
+                                                  data-api-cart-action="increment"
+                                                  th:attr="data-product-id=${item.product.productId}">
                                                 <button class="btn btn-sm btn-outline-secondary"
                                                         type="submit" th:disabled="${q >= max}"
                                                         title="Tăng">+</button>
@@ -181,7 +181,7 @@
                     <div class="account-content">
                         <div class="row">
                             <!-- BIND vào DTO CheckoutAddressDTO -->
-                            <form class="user-form" th:action="@{/checkout}" th:object="${checkout}" method="post" novalidate>
+                            <form class="user-form" th:object="${checkout}" data-api-checkout novalidate>
 
                                 <!-- Email readonly -->
                                 <div class="form-group">
@@ -255,7 +255,7 @@
 <script>
     function showConfigModalDialog(id, name) {
         $('#productName').text(name);
-        $('#removeCartForm').attr('action', '/remove/' + encodeURIComponent(id));
+        document.getElementById('removeCartForm').dataset.productId = id;
         $('#configmationId').modal('show');
     }
 </script>
@@ -264,15 +264,14 @@
 <div class="modal" id="configmationId">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <button class="modal-close" data-bs-dismiss="modal"><i class="icofont-close"></i></button>
+            <button class="modal-close" data-dismiss="modal"><i class="icofont-close"></i></button>
             <div class="modal-form">
                 <h5 class="modal-title">Xác nhận</h5>
                 <div class="modal-body">
                     <p>Bạn có muốn xoá sản phẩm " <span style="color: #119744" id="productName"></span> " ra khỏi giỏ hàng không ?</p>
                 </div>
                 <div class="modal-footer">
-                    <form id="removeCartForm" method="post">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <form id="removeCartForm" data-api-cart-action="remove">
                         <button type="submit" class="btn btn-success">Có</button>
                     </form>
                 </div>
@@ -283,9 +282,9 @@
 
 <footer th:replace="~{storefront/fragments/footer :: footer}"></footer>
 
-<script th:src="@{/storefront/vendor/bootstrap/jquery-1.12.4.min.js}"></script>
-<script th:src="@{/storefront/vendor/bootstrap/popper.min.js}"></script>
-<script th:src="@{/storefront/vendor/bootstrap/bootstrap.min.js}"></script>
+<script th:src="@{/storefront/vendor/bootstrap/jquery-3.6.0.min.js}"></script>
+<script th:src="@{/admin-assets/js/core/popper.min.js}"></script>
+<script th:src="@{/admin-assets/js/core/bootstrap.min.js}"></script>
 <script th:src="@{/storefront/vendor/countdown/countdown.min.js}"></script>
 <script th:src="@{/storefront/vendor/niceselect/nice-select.min.js}"></script>
 <script th:src="@{/storefront/vendor/slickslider/slick.min.js}"></script>

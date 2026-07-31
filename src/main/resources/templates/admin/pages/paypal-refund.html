@@ -15,15 +15,12 @@
 <p>Capture ID: <code th:text="${order.paypalCaptureId}">CAPTURE-ID</code></p>
 <hr/>
 
-<form th:action="@{/admin/paypal/refund}" method="post" class="mt-2">
-    <input type="hidden" name="orderId" th:value="${order.orderId}"/>
-    <!-- Tránh lỗi khi _csrf không có trong model -->
-    <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+<form class="mt-2" data-admin-order-refund th:attr="data-order-id=${order.orderId}">
     <button type="submit" class="btn btn-danger">Xác nhận hoàn tiền toàn bộ (1 lần)</button>
     <a th:href="@{/admin/orders}" class="btn btn-secondary">Huỷ</a>
 </form>
 
-<script src="/admin-assets/js/core/jquery.3.2.1.min.js"></script>
+<script src="/storefront/vendor/bootstrap/jquery-3.6.0.min.js"></script>
 <script src="/admin-assets/js/core/bootstrap.min.js"></script>
 </body>
 </html>

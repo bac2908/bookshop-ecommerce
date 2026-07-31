@@ -14,7 +14,7 @@
     <link rel="stylesheet" th:href="@{/storefront/vendor/venobox/venobox.min.css}"/>
     <link rel="stylesheet" th:href="@{/storefront/vendor/slickslider/slick.min.css}"/>
     <link rel="stylesheet" th:href="@{/storefront/vendor/niceselect/nice-select.min.css}"/>
-    <link rel="stylesheet" th:href="@{/storefront/vendor/bootstrap/bootstrap.min.css}"/>
+    <link rel="stylesheet" th:href="@{/admin-assets/css/bootstrap.min.css}"/>
     <link rel="stylesheet" th:href="@{/storefront/css/main.css}"/>
 </head>
 <body>
@@ -109,28 +109,13 @@
                             </a>
                         </th:block>
 
-<!--                        <th:block sec:authorize="isAuthenticated()">-->
-<!--                            &lt;!&ndash; chưa favorite (null hoặc false) &ndash;&gt;-->
-<!--                            <a class="btn btn-outline-danger"-->
-<!--                               th:if="${p.favorite == null or !p.favorite}"-->
-<!--                               th:href="@{/doFavorite(id=${p.productId}, redirect = '/favorite' )}">-->
-<!--                                <i class="fas fa-heart me-1"></i> Thêm vào yêu thích-->
-<!--                            </a>-->
-
-<!--                             đã favorite-->
-<!--                            <a class="btn btn-warning"-->
-<!--                               th:if="${p.favorite != null and p.favorite}"-->
-<!--                               th:href="@{/doUnFavorite(id=${p.productId}, redirect = '/favorite')}">-->
-<!--                                <i class="fas fa-heart me-1"></i> Bỏ yêu thích-->
-<!--                            </a>-->
-<!--                        </th:block>-->
                         <th:block sec:authorize="isAuthenticated()">
 
                             <!-- Nếu chưa favorite -->
                             <form th:if="${p.favorite == null or !p.favorite}"
                                   class="inline-action-form"
-                                  th:action="@{/doFavorite(id=${p.productId}, redirect='/productDetail?id=' + ${p.productId})}"
-                                  method="post">
+                                  data-api-favorite-action="add"
+                                  th:attr="data-product-id=${p.productId}">
                                 <button type="submit" class="btn btn-outline-danger">
                                     <i class="fas fa-heart me-1"></i> Thêm vào yêu thích
                                 </button>
@@ -139,8 +124,8 @@
                             <!-- Nếu đã favorite -->
                             <form th:if="${p.favorite != null and p.favorite}"
                                   class="inline-action-form"
-                                  th:action="@{/doUnFavorite(id=${p.productId}, redirect='/productDetail?id=' + ${p.productId})}"
-                                  method="post">
+                                  data-api-favorite-action="remove"
+                                  th:attr="data-product-id=${p.productId}">
                                 <button type="submit" class="btn btn-danger">
                                     <i class="fas fa-heart me-1"></i> Bỏ yêu thích
                                 </button>
@@ -151,7 +136,8 @@
 
                         <!-- Thêm giỏ hàng (logic y như shop.html) -->
                         <form th:if="${!outOfStock}" class="inline-action-form"
-                              th:action="@{/addToCart(productId=${p.productId})}" method="post">
+                              data-api-cart-action="add"
+                              th:attr="data-product-id=${p.productId}">
                             <button type="submit" class="btn btn-gradient">
                                 <i class="fas fa-shopping-basket me-1"></i> Thêm giỏ hàng
                             </button>
@@ -215,9 +201,9 @@
 <footer th:replace="~{storefront/fragments/footer :: footer}"></footer>
 
 <!-- Vendor JS của theme (nếu cần) -->
-<script th:src="@{/storefront/vendor/bootstrap/jquery-1.12.4.min.js}"></script>
-<script th:src="@{/storefront/vendor/bootstrap/popper.min.js}"></script>
-<script th:src="@{/storefront/vendor/bootstrap/bootstrap.min.js}"></script>
+<script th:src="@{/storefront/vendor/bootstrap/jquery-3.6.0.min.js}"></script>
+<script th:src="@{/admin-assets/js/core/popper.min.js}"></script>
+<script th:src="@{/admin-assets/js/core/bootstrap.min.js}"></script>
 <script th:src="@{/storefront/vendor/countdown/countdown.min.js}"></script>
 <script th:src="@{/storefront/vendor/niceselect/nice-select.min.js}"></script>
 <script th:src="@{/storefront/vendor/slickslider/slick.min.js}"></script>
