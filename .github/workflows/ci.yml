@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Maven verify (JDK 17)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 17 and Maven cache
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: pom.xml
+
+      - name: Reject tracked runtime files and literal credentials
+        shell: pwsh
+        run: ./scripts/check-repository.ps1
+
+      - name: Run tests and quality gates
+        run: ./mvnw --batch-mode --no-transfer-progress clean verify
+
+  docker-smoke:
+    name: Docker Compose smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      APP_PORT: "18080"
+      MYSQL_PORT: "13308"
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Build and start the application stack
+        run: docker compose up --detach --build
+
+      - name: Verify storefront and product API
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            --retry 45 --retry-delay 2 --retry-all-errors \
+            "http://localhost:${APP_PORT}/" > /dev/null
+          curl --fail --silent --show-error \
+            "http://localhost:${APP_PORT}/api/v1/products" \
+            | grep --quiet '"content"'
+
+      - name: Show application logs on failure
+        if: failure()
+        run: docker compose logs --no-color app mysql
+
+      - name: Stop the application stack
+        if: always()
+        run: docker compose down --volumes --remove-orphans

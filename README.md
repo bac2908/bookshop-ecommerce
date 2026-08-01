@@ -3,13 +3,19 @@
 Ứng dụng bán sách dùng Java 17, Spring Boot 3.5.16, Thymeleaf, Spring Security,
 Spring Data JPA, MySQL 8.4 và Flyway.
 
-## Chạy toàn bộ dự án bằng Docker
+## Chạy dự án bằng một lệnh
 
 Yêu cầu duy nhất: Docker Desktop đang chạy.
 
 ```powershell
-docker compose up -d --build
+.\scripts\dev.ps1
 ```
+
+Script sẽ build hai container, chờ MySQL khỏe và chỉ báo thành công sau khi trang web
+trả HTTP 200. Khi image không thay đổi, có thể khởi động nhanh bằng
+`.\scripts\dev.ps1 -NoBuild`.
+
+Lệnh Docker Compose tương đương là `docker compose up -d --build`.
 
 REST API và tài liệu phát triển:
 
@@ -79,6 +85,22 @@ ADMIN_BOOTSTRAP_PHONE=0900000000
 Chạy `docker compose up -d --build`, đăng nhập thành công, rồi đổi
 `ADMIN_BOOTSTRAP_ENABLED=false` và chạy lại container. Bootstrap không ghi mật
 khẩu ra log và tự bỏ qua khi đã có ít nhất một ADMIN hoạt động.
+
+## Kiểm tra chất lượng
+
+Yêu cầu JDK 17 và Docker Desktop. Chạy cùng quality gate với CI bằng một lệnh:
+
+```powershell
+.\scripts\check.ps1
+```
+
+Lệnh này từ chối file runtime/secret bị theo dõi, chạy toàn bộ 44 test trên H2 và
+MySQL Testcontainers, sau đó kiểm tra JaCoCo tối thiểu 54% line và 27% branch.
+Báo cáo coverage nằm tại `target/site/jacoco/index.html`.
+
+GitHub Actions chạy Maven quality gate và Docker Compose smoke test độc lập cho mọi
+pull request và lần push vào `main`. Dependabot kiểm tra Maven, GitHub Actions và
+Docker hằng tuần. Chi tiết xem [`docs/QUALITY_GATES.md`](docs/QUALITY_GATES.md).
 
 ## Các lệnh hữu ích
 

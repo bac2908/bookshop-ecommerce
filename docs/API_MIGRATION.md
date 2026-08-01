@@ -21,7 +21,7 @@ Dự án chuyển theo từng lát nghiệp vụ, không viết lại toàn bộ
 | 3 | Checkout, tồn kho, đơn hàng và quyền xem/hủy đơn | Hoàn thành |
 | 4 | Quản trị người dùng, danh mục, báo cáo | Hoàn thành |
 | 5 | Gỡ endpoint MVC mutation trùng lặp và dọn JavaScript cũ | Hoàn thành |
-| 6 | CI, quality gates và dọn repository | Tiếp theo |
+| 6 | CI, quality gates và dọn repository | Hoàn thành |
 
 ## Tiêu chuẩn hoàn thành cho mỗi lát nghiệp vụ
 
@@ -123,3 +123,21 @@ Dự án chuyển theo từng lát nghiệp vụ, không viết lại toàn bộ
 - Các POST MVC còn lại chỉ là luồng chưa migrate, không có endpoint API trùng:
   đăng ký/OTP, khôi phục mật khẩu và cập nhật hồ sơ. Chúng tiếp tục có CSRF và
   sẽ không bị xóa cho tới khi có API/test thay thế.
+
+## Quyết định kiến trúc giai đoạn 6
+
+- GitHub Actions chạy hai quality gate độc lập: Maven `clean verify` bằng JDK 17 và
+  Docker Compose smoke test trên MySQL 8.4.
+- Workflow chỉ có quyền `contents: read`, không nhận secret ứng dụng và các action
+  bên ngoài được ghim bằng commit SHA để build có thể tái lập.
+- JaCoCo khóa baseline hiện tại ở tối thiểu 54% line và 27% branch. Mỗi lần bổ sung
+  test phải tăng dần ngưỡng, không hạ ngưỡng để hợp thức hóa regression.
+- Test integration dùng MySQL Testcontainers và áp dụng toàn bộ Flyway migration;
+  smoke test còn build image thật, mở trang chủ và gọi product API.
+- CI và script local từ chối `.env`, output build, log, upload, dữ liệu runtime và
+  credential literal nếu chúng bị đưa vào source hiện tại. `.env.example` chỉ chứa
+  giá trị development giả lập.
+- `.gitattributes` và `.editorconfig` thống nhất encoding, line ending và indent để
+  giảm diff giả giữa Windows/Linux.
+- Dependabot kiểm tra Maven, GitHub Actions và Docker hằng tuần. Lập trình viên dùng
+  `.\scripts\dev.ps1` để chạy dự án và `.\scripts\check.ps1` trước khi push.

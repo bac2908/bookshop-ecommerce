@@ -2,6 +2,10 @@
 .gitignore
 .idea
 .agents
+.github
+.mvn
+docs
+scripts
 bin
 target
 upload
@@ -11,3 +15,7 @@ database.sql
 .env
 .env.*
 !.env.example
+*.md
+mvnw
+mvnw.cmd
+compose.yaml
