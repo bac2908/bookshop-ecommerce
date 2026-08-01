@@ -7,7 +7,7 @@ COPY src src
 RUN --mount=type=cache,target=/root/.m2 \
     mvn --batch-mode --no-transfer-progress -DskipTests clean package
 
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:25-jre-jammy
 
 WORKDIR /app
 
