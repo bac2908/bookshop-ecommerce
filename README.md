@@ -94,7 +94,7 @@ Yêu cầu JDK 17 và Docker Desktop. Chạy cùng quality gate với CI bằng 
 .\scripts\check.ps1
 ```
 
-Lệnh này từ chối file runtime/secret bị theo dõi, chạy toàn bộ 44 test trên H2 và
+Lệnh này từ chối file runtime/secret bị theo dõi, chạy toàn bộ 45 test trên H2 và
 MySQL Testcontainers, sau đó kiểm tra JaCoCo tối thiểu 54% line và 27% branch.
 Báo cáo coverage nằm tại `target/site/jacoco/index.html`.
 

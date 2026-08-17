@@ -5,6 +5,8 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -21,7 +23,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import java.util.Map;
 import java.math.BigDecimal;
@@ -52,6 +56,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import vn.fs.backend.application.service.OrderConfirmationMailService;
+import vn.fs.backend.application.service.SendMailService;
 import vn.fs.backend.application.service.impl.ExchangeRateService;
 import vn.fs.backend.application.service.paypal.PaypalOrdersV2Service;
 
@@ -92,9 +97,16 @@ class BookshopApiIntegrationTest {
     @MockitoBean
     private OrderConfirmationMailService orderConfirmationMailService;
 
+    @MockitoBean
+    private SendMailService sendMailService;
+
     @BeforeEach
     void seedApiUser() {
-        reset(paypalOrdersV2Service, exchangeRateService, orderConfirmationMailService);
+        reset(
+                paypalOrdersV2Service,
+                exchangeRateService,
+                orderConfirmationMailService,
+                sendMailService);
         when(exchangeRateService.getVNDExchangeRate()).thenReturn(25_000.0);
 
         Long customerId = ensureApiUser(
@@ -387,6 +399,97 @@ class BookshopApiIntegrationTest {
                 Integer.class,
                 "api_customer");
         assertTrue(failedAttempts != null && failedAttempts >= 1);
+    }
+
+    @Test
+    void forgotPasswordRequiresVerifiedOtpAndCannotReuseResetSession()
+            throws Exception {
+        String email = "api.customer@example.test";
+        String replacementPassword = "RecoveredPassword123!";
+        String reusedPassword = "ReusedPassword123!";
+        String originalHash = jdbcTemplate.queryForObject(
+                "select password from user where email = ?",
+                String.class,
+                email);
+
+        try {
+            MvcResult unverifiedRequest = mockMvc.perform(post("/forgotPassword")
+                            .with(csrf())
+                            .param("email", email))
+                    .andExpect(status().isOk())
+                    .andExpect(view().name(
+                            "storefront/pages/confirm-otp-forgot-password"))
+                    .andReturn();
+            MockHttpSession unverifiedSession = (MockHttpSession) unverifiedRequest
+                    .getRequest()
+                    .getSession(false);
+            assertNotNull(unverifiedSession);
+
+            mockMvc.perform(post("/changePassword")
+                            .session(unverifiedSession)
+                            .with(csrf())
+                            .param("email", email)
+                            .param("newPassword", replacementPassword)
+                            .param("confirmPassword", replacementPassword))
+                    .andExpect(status().isOk())
+                    .andExpect(view().name("storefront/pages/forgot-password"))
+                    .andExpect(model().attributeExists("error"));
+            assertEquals(originalHash, passwordHash(email));
+
+            MvcResult verifiedRequest = mockMvc.perform(post("/forgotPassword")
+                            .with(csrf())
+                            .param("email", email))
+                    .andExpect(status().isOk())
+                    .andReturn();
+            MockHttpSession verifiedSession = (MockHttpSession) verifiedRequest
+                    .getRequest()
+                    .getSession(false);
+            assertNotNull(verifiedSession);
+            String otp = (String) verifiedSession.getAttribute("FP_OTP");
+            assertNotNull(otp);
+
+            mockMvc.perform(post("/confirmOtpForgotPassword")
+                            .session(verifiedSession)
+                            .with(csrf())
+                            .param("email", email)
+                            .param("otp", otp))
+                    .andExpect(status().isOk())
+                    .andExpect(view().name("storefront/pages/change-password"));
+            assertEquals(Boolean.TRUE, verifiedSession.getAttribute("FP_VERIFIED"));
+            assertNull(verifiedSession.getAttribute("FP_OTP"));
+
+            mockMvc.perform(post("/changePassword")
+                            .session(verifiedSession)
+                            .with(csrf())
+                            .param("email", email)
+                            .param("newPassword", replacementPassword)
+                            .param("confirmPassword", replacementPassword))
+                    .andExpect(status().isOk())
+                    .andExpect(view().name("storefront/pages/change-password"))
+                    .andExpect(model().attribute("showLoginLink", true));
+            assertTrue(passwordEncoder.matches(
+                    replacementPassword,
+                    passwordHash(email)));
+            assertNull(verifiedSession.getAttribute("FP_VERIFIED"));
+
+            mockMvc.perform(post("/changePassword")
+                            .session(verifiedSession)
+                            .with(csrf())
+                            .param("email", email)
+                            .param("newPassword", reusedPassword)
+                            .param("confirmPassword", reusedPassword))
+                    .andExpect(status().isOk())
+                    .andExpect(view().name("storefront/pages/forgot-password"))
+                    .andExpect(model().attributeExists("error"));
+            assertTrue(passwordEncoder.matches(
+                    replacementPassword,
+                    passwordHash(email)));
+        } finally {
+            jdbcTemplate.update(
+                    "update user set password = ? where email = ?",
+                    originalHash,
+                    email);
+        }
     }
 
     @Test
@@ -1161,6 +1264,13 @@ class BookshopApiIntegrationTest {
                 "select user_id from user where username = ?",
                 Long.class,
                 username);
+    }
+
+    private String passwordHash(String email) {
+        return jdbcTemplate.queryForObject(
+                "select password from user where email = ?",
+                String.class,
+                email);
     }
 
     private Long roleId(String roleName) {
