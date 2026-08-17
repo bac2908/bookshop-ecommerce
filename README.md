@@ -68,6 +68,10 @@ docker compose up -d --build
 
 Không commit `.env` hoặc secret thật vào Git.
 
+OTP đăng ký và quên mật khẩu mặc định giới hạn 5 lần phát mã trong 15 phút cho
+cả email và địa chỉ IP. Có thể điều chỉnh bằng `AUTH_OTP_MAX_REQUESTS` và
+`AUTH_OTP_WINDOW_MINUTES`; không nên tăng giới hạn ở môi trường production.
+
 ## Tạo quản trị viên đầu tiên
 
 Hệ thống không tạo tài khoản ADMIN với mật khẩu mặc định. Khi database chưa có
@@ -94,9 +98,10 @@ Yêu cầu JDK 17 và Docker Desktop. Chạy cùng quality gate với CI bằng 
 .\scripts\check.ps1
 ```
 
-Lệnh này từ chối file runtime/secret bị theo dõi, chạy toàn bộ 45 test trên H2 và
+Lệnh này từ chối file runtime/secret bị theo dõi, chạy toàn bộ 50 test trên H2 và
 MySQL Testcontainers, sau đó kiểm tra JaCoCo tối thiểu 54% line và 27% branch.
-Báo cáo coverage nằm tại `target/site/jacoco/index.html`.
+Kết quả hiện tại đạt 59,28% line và 33,30% branch. Báo cáo coverage nằm tại
+`target/site/jacoco/index.html`.
 
 GitHub Actions chạy Maven quality gate và Docker Compose smoke test độc lập cho mọi
 pull request và lần push vào `main`. Dependabot kiểm tra Maven, GitHub Actions và

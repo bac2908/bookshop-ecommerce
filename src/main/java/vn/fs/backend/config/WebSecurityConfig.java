@@ -118,6 +118,7 @@ public class WebSecurityConfig {
                                 "/aboutUs", "/contact", "/loadImage", "/forgotPassword",
                                 "/confirmOtpForgotPassword", "/changePassword", "/error").permitAll()
                         .requestMatchers(HttpMethod.POST, "/register", "/confirmOtpRegister",
+                                "/resendOtpRegister",
                                 "/forgotPassword", "/confirmOtpForgotPassword",
                                 "/resendOtpForgotPassword", "/changePassword").permitAll()
                         .requestMatchers("/admin/reports", "/admin/reportCategory",

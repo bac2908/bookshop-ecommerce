@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -40,6 +41,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -47,6 +50,7 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -56,9 +60,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import vn.fs.backend.application.service.OrderConfirmationMailService;
+import vn.fs.backend.application.service.OtpRateLimitService;
 import vn.fs.backend.application.service.SendMailService;
 import vn.fs.backend.application.service.impl.ExchangeRateService;
 import vn.fs.backend.application.service.paypal.PaypalOrdersV2Service;
+import vn.fs.backend.application.dto.PendingRegistration;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -88,6 +94,9 @@ class BookshopApiIntegrationTest {
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
 
+    @Autowired
+    private OtpRateLimitService otpRateLimitService;
+
     @MockitoBean
     private PaypalOrdersV2Service paypalOrdersV2Service;
 
@@ -100,13 +109,17 @@ class BookshopApiIntegrationTest {
     @MockitoBean
     private SendMailService sendMailService;
 
+    @MockitoBean
+    private JavaMailSender javaMailSender;
+
     @BeforeEach
     void seedApiUser() {
         reset(
                 paypalOrdersV2Service,
                 exchangeRateService,
                 orderConfirmationMailService,
-                sendMailService);
+                sendMailService,
+                javaMailSender);
         when(exchangeRateService.getVNDExchangeRate()).thenReturn(25_000.0);
 
         Long customerId = ensureApiUser(
@@ -415,6 +428,7 @@ class BookshopApiIntegrationTest {
         try {
             MvcResult unverifiedRequest = mockMvc.perform(post("/forgotPassword")
                             .with(csrf())
+                            .with(remoteAddress("198.51.100.10"))
                             .param("email", email))
                     .andExpect(status().isOk())
                     .andExpect(view().name(
@@ -438,6 +452,7 @@ class BookshopApiIntegrationTest {
 
             MvcResult verifiedRequest = mockMvc.perform(post("/forgotPassword")
                             .with(csrf())
+                            .with(remoteAddress("198.51.100.10"))
                             .param("email", email))
                     .andExpect(status().isOk())
                     .andReturn();
@@ -489,6 +504,236 @@ class BookshopApiIntegrationTest {
                     "update user set password = ? where email = ?",
                     originalHash,
                     email);
+        }
+    }
+
+    @Test
+    void forgotPasswordDoesNotRevealWhetherAccountExists() throws Exception {
+        MvcResult knownAccount = mockMvc.perform(post("/forgotPassword")
+                        .with(csrf())
+                        .with(remoteAddress("198.51.100.31"))
+                        .param("email", "api.staff@example.test"))
+                .andExpect(status().isOk())
+                .andExpect(view().name(
+                        "storefront/pages/confirm-otp-forgot-password"))
+                .andExpect(model().attributeExists("message"))
+                .andReturn();
+
+        MvcResult unknownAccount = mockMvc.perform(post("/forgotPassword")
+                        .with(csrf())
+                        .with(remoteAddress("198.51.100.32"))
+                        .param("email", "missing-account@example.test"))
+                .andExpect(status().isOk())
+                .andExpect(view().name(
+                        "storefront/pages/confirm-otp-forgot-password"))
+                .andExpect(model().attributeExists("message"))
+                .andReturn();
+
+        assertNotNull(knownAccount.getModelAndView());
+        assertNotNull(unknownAccount.getModelAndView());
+        assertEquals(
+                knownAccount.getModelAndView().getModel().get("message"),
+                unknownAccount.getModelAndView().getModel().get("message"));
+        assertNotNull(knownAccount.getRequest().getSession(false)
+                .getAttribute("FP_OTP"));
+        assertNotNull(unknownAccount.getRequest().getSession(false)
+                .getAttribute("FP_OTP"));
+        verify(sendMailService, times(1)).queue(
+                anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void forgotPasswordRateLimitsOtpByEmailAndIp() throws Exception {
+        String email = "api.other@example.test";
+        for (int requestNumber = 1; requestNumber <= 6; requestNumber++) {
+            mockMvc.perform(post("/forgotPassword")
+                            .with(csrf())
+                            .with(remoteAddress("198.51.100.40"))
+                            .param("email", email))
+                    .andExpect(status().isOk())
+                    .andExpect(view().name(
+                            "storefront/pages/confirm-otp-forgot-password"))
+                    .andExpect(model().attributeExists("message"));
+        }
+
+        verify(sendMailService, times(5)).queue(
+                anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void otpRateLimiterEnforcesEmailAndIpDimensionsIndependently() {
+        String uniqueSuffix = Long.toUnsignedString(System.nanoTime());
+        String emailFlow = "TEST_EMAIL_" + uniqueSuffix;
+        String limitedEmail = "limited." + uniqueSuffix + "@example.test";
+        for (int requestNumber = 1; requestNumber <= 5; requestNumber++) {
+            assertTrue(otpRateLimitService.tryAcquire(
+                    emailFlow,
+                    limitedEmail,
+                    "203.0.113." + requestNumber));
+        }
+        assertFalse(otpRateLimitService.tryAcquire(
+                emailFlow,
+                limitedEmail,
+                "203.0.113.99"));
+
+        String ipFlow = "TEST_IP_" + uniqueSuffix;
+        String limitedIp = "203.0.113.200";
+        for (int requestNumber = 1; requestNumber <= 5; requestNumber++) {
+            assertTrue(otpRateLimitService.tryAcquire(
+                    ipFlow,
+                    "different." + requestNumber + "." + uniqueSuffix
+                            + "@example.test",
+                    limitedIp));
+        }
+        assertFalse(otpRateLimitService.tryAcquire(
+                ipFlow,
+                "another." + uniqueSuffix + "@example.test",
+                limitedIp));
+    }
+
+    @Test
+    void registrationStoresOnlyPasswordHashAndConsumesOtpOnce()
+            throws Exception {
+        String username = "secureregisteruser";
+        String email = "secure.register@example.test";
+        String rawPassword = "SecurePassword123!";
+        deleteUserIdentity(username, email);
+
+        try {
+            MvcResult registration = registerWithOtp(
+                    username,
+                    email,
+                    rawPassword,
+                    "198.51.100.50");
+            MockHttpSession registrationSession = (MockHttpSession) registration
+                    .getRequest()
+                    .getSession(false);
+            assertNotNull(registrationSession);
+
+            PendingRegistration pending = (PendingRegistration) registrationSession
+                    .getAttribute("REGISTER_PENDING_FORM");
+            assertNotNull(pending);
+            assertNotEquals(rawPassword, pending.passwordHash());
+            assertTrue(passwordEncoder.matches(
+                    rawPassword,
+                    pending.passwordHash()));
+            var attributeNames = registrationSession.getAttributeNames();
+            while (attributeNames.hasMoreElements()) {
+                assertNotEquals(
+                        rawPassword,
+                        registrationSession.getAttribute(
+                                attributeNames.nextElement()));
+            }
+
+            mockMvc.perform(post("/resendOtpRegister")
+                            .session(registrationSession)
+                            .with(csrf())
+                            .with(remoteAddress("198.51.100.50")))
+                    .andExpect(status().isOk())
+                    .andExpect(view().name(
+                            "storefront/pages/confirm-otp-register"))
+                    .andExpect(model().attributeExists("error"));
+            verify(javaMailSender, times(1))
+                    .send(any(SimpleMailMessage.class));
+
+            registrationSession.setAttribute("REGISTER_OTP_LAST_SEND", 0L);
+            mockMvc.perform(post("/resendOtpRegister")
+                            .session(registrationSession)
+                            .with(csrf())
+                            .with(remoteAddress("198.51.100.50")))
+                    .andExpect(status().isOk())
+                    .andExpect(view().name(
+                            "storefront/pages/confirm-otp-register"))
+                    .andExpect(model().attributeExists("message"));
+            verify(javaMailSender, times(2))
+                    .send(any(SimpleMailMessage.class));
+
+            String otp = (String) registrationSession
+                    .getAttribute("REGISTER_OTP");
+            assertNotNull(otp);
+            mockMvc.perform(post("/confirmOtpRegister")
+                            .session(registrationSession)
+                            .with(csrf())
+                            .param("otp", otp))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(header().string(
+                            "Location",
+                            "/login?registered=1"));
+
+            assertTrue(passwordEncoder.matches(
+                    rawPassword,
+                    passwordHash(email)));
+            Integer roleCount = jdbcTemplate.queryForObject(
+                    """
+                    select count(*)
+                    from users_roles ur
+                    join user u on u.user_id = ur.user_id
+                    join role r on r.id = ur.role_id
+                    where u.username = ? and r.name = 'ROLE_USER'
+                    """,
+                    Integer.class,
+                    username);
+            assertEquals(1, roleCount);
+            assertNull(registrationSession.getAttribute(
+                    "REGISTER_PENDING_FORM"));
+            assertNull(registrationSession.getAttribute("REGISTER_OTP"));
+        } finally {
+            deleteUserIdentity(username, email);
+        }
+    }
+
+    @Test
+    void registrationLocksFlowAfterFiveWrongOtpAttempts()
+            throws Exception {
+        String username = "otpattemptuser";
+        String email = "otp.attempt@example.test";
+        deleteUserIdentity(username, email);
+
+        try {
+            MvcResult registration = registerWithOtp(
+                    username,
+                    email,
+                    "AnotherSecure123!",
+                    "198.51.100.51");
+            MockHttpSession registrationSession = (MockHttpSession) registration
+                    .getRequest()
+                    .getSession(false);
+            assertNotNull(registrationSession);
+            String issuedOtp = (String) registrationSession
+                    .getAttribute("REGISTER_OTP");
+            String wrongOtp = "000000".equals(issuedOtp)
+                    ? "111111"
+                    : "000000";
+
+            for (int attempt = 1; attempt < 5; attempt++) {
+                mockMvc.perform(post("/confirmOtpRegister")
+                                .session(registrationSession)
+                                .with(csrf())
+                                .param("otp", wrongOtp))
+                        .andExpect(status().isOk())
+                        .andExpect(view().name(
+                                "storefront/pages/confirm-otp-register"))
+                        .andExpect(model().attributeExists("error"));
+            }
+            mockMvc.perform(post("/confirmOtpRegister")
+                            .session(registrationSession)
+                            .with(csrf())
+                            .param("otp", wrongOtp))
+                    .andExpect(status().isOk())
+                    .andExpect(view().name("storefront/pages/register"))
+                    .andExpect(model().attributeExists("error"));
+
+            Integer userCount = jdbcTemplate.queryForObject(
+                    "select count(*) from user where username = ? or email = ?",
+                    Integer.class,
+                    username,
+                    email);
+            assertEquals(0, userCount);
+            assertNull(registrationSession.getAttribute(
+                    "REGISTER_PENDING_FORM"));
+            assertNull(registrationSession.getAttribute("REGISTER_OTP"));
+        } finally {
+            deleteUserIdentity(username, email);
         }
     }
 
@@ -1236,6 +1481,51 @@ class BookshopApiIntegrationTest {
         mockMvc.perform(get("/admin/reports")
                         .with(user("api_admin").roles("ADMIN")))
                 .andExpect(status().isOk());
+    }
+
+    private MvcResult registerWithOtp(
+            String username,
+            String email,
+            String password,
+            String remoteIp) throws Exception {
+        return mockMvc.perform(post("/register")
+                        .with(csrf())
+                        .with(remoteAddress(remoteIp))
+                        .param("username", username)
+                        .param("email", email)
+                        .param("name", "Secure Register")
+                        .param("phone", "0901234567")
+                        .param("password", password)
+                        .param("confirmPassword", password))
+                .andExpect(status().isOk())
+                .andExpect(view().name(
+                        "storefront/pages/confirm-otp-register"))
+                .andExpect(model().attribute("email", email))
+                .andReturn();
+    }
+
+    private void deleteUserIdentity(String username, String email) {
+        jdbcTemplate.update(
+                """
+                delete from users_roles
+                where user_id in (
+                    select user_id from user
+                    where username = ? or email = ?
+                )
+                """,
+                username,
+                email);
+        jdbcTemplate.update(
+                "delete from user where username = ? or email = ?",
+                username,
+                email);
+    }
+
+    private static RequestPostProcessor remoteAddress(String address) {
+        return request -> {
+            request.setRemoteAddr(address);
+            return request;
+        };
     }
 
     private void addProductToCart(String username, long productId, int quantity)

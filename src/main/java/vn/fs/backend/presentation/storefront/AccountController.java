@@ -9,13 +9,17 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import vn.fs.backend.application.dto.ChangePassword;
+import vn.fs.backend.application.service.OtpRateLimitService;
 import vn.fs.backend.domain.model.User;
 import vn.fs.backend.infrastructure.persistence.UserRepository;
+import vn.fs.backend.security.IpUtils;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.Optional;
 
 @Controller
@@ -28,6 +32,9 @@ public class AccountController {
     private static final String FP_RESEND   = "FP_RESEND";
     private static final String FP_LASTSEND = "FP_LASTSEND";
     private static final String FP_VERIFIED = "FP_VERIFIED";
+    private static final String OTP_FLOW    = "PASSWORD_RESET";
+    private static final String GENERIC_OTP_MESSAGE =
+            "Nếu email tồn tại trong hệ thống, mã OTP đã được gửi. Vui lòng kiểm tra hộp thư.";
 
     private static final long OTP_TTL_MS        = 5 * 60 * 1000;
     private static final int  OTP_MAX_TRY       = 5;
@@ -39,6 +46,7 @@ public class AccountController {
     @Autowired HttpSession session;
     @Autowired UserRepository userRepository;
     @Autowired vn.fs.backend.application.service.SendMailService sendMailService;
+    @Autowired OtpRateLimitService otpRateLimitService;
 
     @GetMapping("/forgotPassword")
     public String forgotPassword() {
@@ -47,25 +55,41 @@ public class AccountController {
     }
 
     @PostMapping("/forgotPassword")
-    public ModelAndView forgotPassowrd(ModelMap model, @RequestParam("email") String email) {
-        String mail = email == null ? "" : email.trim();
+    public ModelAndView forgotPassowrd(
+            ModelMap model,
+            @RequestParam("email") String email,
+            HttpServletRequest request) {
+        String mail = email == null
+                ? ""
+                : email.trim().toLowerCase(Locale.ROOT);
         if (mail.isEmpty()) {
             model.addAttribute("error", "Vui lòng nhập email đã đăng ký.");
             return new ModelAndView("storefront/pages/forgot-password", model);
         }
-        Optional<User> opt = userRepository.findByEmailIgnoreCase(mail);
-        if (opt.isEmpty()) {
-            model.addAttribute("error", "Email này chưa đăng ký!");
-            return new ModelAndView("storefront/pages/forgot-password", model);
+
+        boolean allowed = otpRateLimitService.tryAcquire(
+                OTP_FLOW,
+                mail,
+                IpUtils.getClientIp(request));
+        Optional<User> account = allowed
+                ? userRepository.findByEmailIgnoreCase(mail)
+                : Optional.empty();
+        if (account.isPresent()) {
+            issueOtpAndSend(account.get().getEmail());
+        } else if (!hasActiveOtpFor(mail)) {
+            issueOtpWithoutEmail(mail);
         }
-        issueOtpAndSend(opt.get().getEmail());
-        model.addAttribute("email", opt.get().getEmail());
-        model.addAttribute("message", "Mã OTP đã được gửi tới email của bạn. Vui lòng kiểm tra hộp thư!");
+
+        model.addAttribute("email", mail);
+        model.addAttribute("message", GENERIC_OTP_MESSAGE);
         return new ModelAndView("storefront/pages/confirm-otp-forgot-password", model);
     }
 
     @PostMapping("/resendOtpForgotPassword")
-    public ModelAndView resendOtp(ModelMap model, @RequestParam("email") String email) {
+    public ModelAndView resendOtp(
+            ModelMap model,
+            @RequestParam("email") String email,
+            HttpServletRequest request) {
         String savedEmail = (String) session.getAttribute(FP_EMAIL);
         if (savedEmail == null || !savedEmail.equalsIgnoreCase(email)) {
             model.addAttribute("error", "Phiên xác thực đã hết hạn. Vui lòng thực hiện lại.");
@@ -88,8 +112,20 @@ public class AccountController {
             model.addAttribute("error", "Bạn đã yêu cầu OTP quá số lần cho phép. Vui lòng thực hiện lại từ đầu.");
             return new ModelAndView("storefront/pages/forgot-password", model);
         }
+        if (!otpRateLimitService.tryAcquire(
+                OTP_FLOW,
+                savedEmail,
+                IpUtils.getClientIp(request))) {
+            model.addAttribute("email", savedEmail);
+            model.addAttribute("error", "Bạn đã yêu cầu quá nhiều mã OTP. Vui lòng thử lại sau.");
+            return new ModelAndView("storefront/pages/confirm-otp-forgot-password", model);
+        }
 
-        issueOtpAndSend(savedEmail);
+        if (userRepository.findByEmailIgnoreCase(savedEmail).isPresent()) {
+            issueOtpAndSend(savedEmail);
+        } else {
+            issueOtpWithoutEmail(savedEmail);
+        }
         session.setAttribute(FP_RESEND, count + 1);
         session.setAttribute(FP_LASTSEND, now);
 
@@ -226,13 +262,7 @@ public class AccountController {
 
     private void issueOtpAndSend(String email) {
         String otp = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
-        long expireAt = Instant.now().toEpochMilli() + OTP_TTL_MS;
-
-        session.removeAttribute(FP_VERIFIED);
-        session.setAttribute(FP_EMAIL, email);
-        session.setAttribute(FP_OTP, otp);
-        session.setAttribute(FP_EXPIRE, expireAt);
-        session.setAttribute(FP_ATTEMPT, 0);
+        storeResetOtp(email, otp);
 
         String body = "<div><h3>Mã xác thực OTP của bạn là: " +
                 "<span style=\"color:#119744; font-weight:bold;\">" + otp + "</span></h3>" +
@@ -242,6 +272,33 @@ public class AccountController {
 
         session.setAttribute(FP_LASTSEND, Instant.now().toEpochMilli());
         if (session.getAttribute(FP_RESEND) == null) session.setAttribute(FP_RESEND, 0);
+    }
+
+    private void issueOtpWithoutEmail(String email) {
+        storeResetOtp(
+                email,
+                String.format("%06d", SECURE_RANDOM.nextInt(1_000_000)));
+        session.setAttribute(FP_LASTSEND, Instant.now().toEpochMilli());
+        if (session.getAttribute(FP_RESEND) == null) session.setAttribute(FP_RESEND, 0);
+    }
+
+    private void storeResetOtp(String email, String otp) {
+        session.removeAttribute(FP_VERIFIED);
+        session.setAttribute(FP_EMAIL, email);
+        session.setAttribute(FP_OTP, otp);
+        session.setAttribute(FP_EXPIRE, Instant.now().toEpochMilli() + OTP_TTL_MS);
+        session.setAttribute(FP_ATTEMPT, 0);
+    }
+
+    private boolean hasActiveOtpFor(String email) {
+        String savedEmail = (String) session.getAttribute(FP_EMAIL);
+        String otp = (String) session.getAttribute(FP_OTP);
+        Long expireAt = (Long) session.getAttribute(FP_EXPIRE);
+        return savedEmail != null
+                && savedEmail.equalsIgnoreCase(email)
+                && otp != null
+                && expireAt != null
+                && Instant.now().toEpochMilli() <= expireAt;
     }
 
     private boolean isVerifiedResetSession(String requestedEmail) {
